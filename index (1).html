@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>WorkLog — Daily HR Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#F7F5F0;--surface:#fff;--surface2:#F2EFE9;--border:#E0DBD1;--text:#1A1714;--text2:#6B6560;--text3:#9E9890;--accent:#C4521A;--accent-light:#F9EDE6;--tech:#1A4E8C;--tech-bg:#E8F0FA;--cs:#1A7A4A;--cs-bg:#E6F4EC;--mkt:#8C5A1A;--mkt-bg:#FAF0E6;--red:#C0392B;--red-bg:#FDECEA;--radius:10px;--radius-lg:16px;--shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100}
+.logo{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);display:flex;align-items:center;gap:8px}
+.logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%}
+.nav-tabs{display:flex;gap:2px}
+.nav-tab{padding:7px 14px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);transition:all .15s;border:none;background:none}
+.nav-tab:hover{background:var(--surface2);color:var(--text)}
+.nav-tab.active{background:var(--accent);color:#fff}
+.nav-right{font-size:12px;color:var(--text3)}
+main{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
+.page{display:none}.page.active{display:block}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--shadow)}
+.card-title{font-family:'DM Serif Display',serif;font-size:17px;color:var(--text);margin-bottom:1.25rem;display:flex;align-items:center;gap:8px}
+.card-title-icon{width:28px;height:28px;background:var(--accent-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text2)}
+.field input,.field select,.field textarea{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);background:var(--bg);transition:border-color .15s,box-shadow .15s;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(196,82,26,.12);background:#fff}
+.field textarea{resize:vertical;min-height:70px}
+.task-list{margin-bottom:12px}
+.task-row{display:grid;grid-template-columns:2fr 1.5fr 1fr 70px 32px;gap:8px;align-items:center;margin-bottom:8px;animation:slideIn .2s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.task-row input{padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s}
+.task-row input:focus{border-color:var(--accent);background:#fff}
+.remove-task{width:28px;height:28px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text3);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.remove-task:hover{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.task-row-header{display:grid;grid-template-columns:2fr 1.5fr 1fr 70px 32px;gap:8px;margin-bottom:6px}
+.task-row-header span{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);padding:0 2px}
+.add-task-btn{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:var(--accent);background:var(--accent-light);border:none;border-radius:8px;padding:6px 12px;cursor:pointer;transition:opacity .15s}
+.add-task-btn:hover{opacity:.8}
+.total-bar{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px;margin-top:8px}
+.total-bar span:first-child{font-size:12px;color:var(--text2);font-weight:500}
+.total-hrs{font-size:20px;font-weight:600;color:var(--accent)}
+.submit-btn{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-lg);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .15s,transform .1s}
+.submit-btn:hover{opacity:.9}.submit-btn:active{transform:scale(.99)}.submit-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.toast{position:fixed;top:70px;right:24px;background:var(--cs);color:#fff;padding:12px 20px;border-radius:var(--radius-lg);font-size:13px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.15);z-index:999;transform:translateY(-8px);opacity:0;transition:all .3s ease;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}.toast.error{background:var(--red)}
+.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1.5rem}
+.metric-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;box-shadow:var(--shadow)}
+.metric-label{font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.metric-value{font-family:'DM Serif Display',serif;font-size:32px;color:var(--text);line-height:1}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.metric-card.danger .metric-value{color:var(--red)}
+.metric-card.success .metric-value{color:var(--cs)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;align-items:center}
+.filters select,.filters input[type=text]{padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface);outline:none;cursor:pointer}
+.filter-label{font-size:12px;color:var(--text3);font-weight:500}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:hover{background:var(--bg)}
+tbody td{padding:10px 12px;font-size:13px;color:var(--text);vertical-align:middle}
+tbody td.muted{color:var(--text2)}
+.empty-state{text-align:center;padding:2.5rem 1rem;color:var(--text3);font-size:14px}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;letter-spacing:.3px}
+.badge-tech{background:var(--tech-bg);color:var(--tech)}
+.badge-cs{background:var(--cs-bg);color:var(--cs)}
+.badge-mkt{background:var(--mkt-bg);color:var(--mkt)}
+.badge-other{background:var(--surface2);color:var(--text2)}
+.badge-missing{background:var(--red-bg);color:var(--red)}
+.badge-present{background:var(--cs-bg);color:var(--cs)}
+.report-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px}
+.report-title{font-family:'DM Serif Display',serif;font-size:22px}
+.export-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--text);color:#fff;border:none;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:opacity .15s}
+.export-btn:hover{opacity:.85}.export-btn svg{width:14px;height:14px}
+.progress-row{margin-bottom:10px}
+.progress-info{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.progress-bar{height:5px;background:var(--surface2);border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;border-radius:99px;transition:width .6s ease}
+.fill-tech{background:var(--tech)}.fill-cs{background:var(--cs)}.fill-mkt{background:var(--mkt)}
+.week-nav{display:flex;align-items:center;gap:6px}
+.week-nav button{width:28px;height:28px;border:1px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;font-size:16px;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:background .1s}
+.week-nav button:hover{background:var(--surface2)}
+.week-nav span{font-size:13px;font-weight:500;color:var(--text2);min-width:160px;text-align:center}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-row td{text-align:center;padding:2rem;color:var(--text3);font-size:13px}
+.section-divider{font-family:'DM Serif Display',serif;font-size:17px;margin-bottom:1rem}
+/* Not submitted grid */
+.emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:4px}
+.emp-chip{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border);font-size:12.5px}
+.emp-chip.missing{background:var(--red-bg);border-color:#f5c6c6}
+.emp-chip.present{background:var(--cs-bg);border-color:#b8dfc8}
+.emp-chip-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.emp-chip.missing .emp-chip-dot{background:var(--red)}
+.emp-chip.present .emp-chip-dot{background:var(--cs)}
+/* vs last week */
+.vs-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.vs-row:last-child{border-bottom:none}
+.vs-change{font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px}
+.vs-up{background:#E6F4EC;color:var(--cs)}.vs-down{background:var(--red-bg);color:var(--red)}.vs-same{background:var(--surface2);color:var(--text3)}
+/* Leave tracker */
+.leave-form-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:1rem}
+.leave-badge{padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+.leave-sick{background:#FEF3E2;color:#A05000}
+.leave-annual{background:#E8F0FA;color:var(--tech)}
+.leave-personal{background:#F3E8FA;color:#6B3A8C}
+.leave-other{background:var(--surface2);color:var(--text2)}
+/* Login overlay */
+.login-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2.5rem;max-width:400px;width:90%;box-shadow:var(--shadow);text-align:center}
+.login-box .logo{justify-content:center;font-size:28px;margin-bottom:8px}
+.login-box .login-sub{color:var(--text2);font-size:13.5px;margin-bottom:1.5rem}
+.login-box input{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:var(--bg);outline:none;margin-bottom:12px;transition:border-color .15s,box-shadow .15s}
+.login-box input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(196,82,26,.12);background:#fff}
+.login-box .login-btn{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-lg);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.login-box .login-btn:hover{opacity:.9}
+.login-box .login-btn:disabled{opacity:.6;cursor:not-allowed}
+.login-error{color:var(--red);font-size:12.5px;margin-top:8px;min-height:18px}
+.login-info{font-size:11.5px;color:var(--text3);margin-top:16px}
+.otp-step{display:none}
+.otp-step.active{display:block}
+.otp-input-group{display:flex;gap:8px;justify-content:center;margin:16px 0 12px}
+.otp-input-group input{width:44px;height:52px;text-align:center;font-size:22px;font-weight:600;font-family:'DM Sans',sans-serif;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s}
+.otp-input-group input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(196,82,26,.12);background:#fff}
+.otp-resend{font-size:12px;color:var(--text3);margin-top:8px}
+.otp-resend button{background:none;border:none;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;text-decoration:underline}
+.otp-resend button:disabled{color:var(--text3);cursor:not-allowed;text-decoration:none}
+.otp-email-display{background:var(--surface2);padding:6px 12px;border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:500;display:inline-block;margin-bottom:12px}
+.otp-back{background:none;border:none;color:var(--text3);cursor:pointer;font-size:12.5px;font-family:'DM Sans',sans-serif;margin-top:12px}
+.otp-back:hover{color:var(--text2)}
+.user-badge{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;padding:4px 10px;border-radius:var(--radius);transition:background .15s;border:none;background:none;font-family:'DM Sans',sans-serif}
+.user-badge:hover{background:var(--surface2)}
+.user-badge .user-avatar{width:24px;height:24px;background:var(--accent-light);color:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+/* AI Assistant */
+.ai-container{max-width:720px;margin:0 auto}
+.ai-chat{min-height:400px;max-height:520px;overflow-y:auto;padding:1rem 0;display:flex;flex-direction:column;gap:12px}
+.ai-msg{padding:12px 16px;border-radius:var(--radius-lg);font-size:13.5px;line-height:1.6;max-width:88%;animation:slideIn .2s ease}
+.ai-msg.user{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.ai-msg.assistant{background:var(--surface2);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px}
+.ai-msg.assistant pre{background:var(--bg);padding:8px 12px;border-radius:8px;overflow-x:auto;font-size:12px;margin:6px 0}
+.ai-msg.system{background:transparent;color:var(--text3);font-size:12px;text-align:center;align-self:center}
+.ai-input-row{display:flex;gap:8px;margin-top:12px}
+.ai-input-row input{flex:1;padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-lg);font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s,box-shadow .15s}
+.ai-input-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(196,82,26,.12);background:#fff}
+.ai-input-row button{padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-lg);font-family:'DM Sans',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;transition:opacity .15s;white-space:nowrap}
+.ai-input-row button:hover{opacity:.9}
+.ai-input-row button:disabled{opacity:.5;cursor:not-allowed}
+.ai-typing{display:inline-flex;gap:4px;padding:12px 16px}
+.ai-typing span{width:6px;height:6px;background:var(--text3);border-radius:50%;animation:bounce .6s infinite alternate}
+.ai-typing span:nth-child(2){animation-delay:.2s}.ai-typing span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{to{opacity:.3;transform:translateY(-4px)}}
+.ai-suggestions{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.ai-suggest-btn{padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:99px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s}
+.ai-suggest-btn:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
+/* HR PIN modal */
+.pin-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:150;display:flex;align-items:center;justify-content:center;display:none}
+.pin-box{background:var(--surface);border-radius:var(--radius-lg);padding:2rem;max-width:340px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.15);text-align:center}
+.pin-box input{width:100%;padding:11px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:14px;text-align:center;letter-spacing:4px;outline:none;margin:12px 0}
+.pin-box input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(196,82,26,.12)}
+@media(max-width:600px){
+  .field-grid{grid-template-columns:1fr}
+  .metric-grid,.metric-grid-4{grid-template-columns:1fr 1fr}
+  .task-row,.task-row-header{grid-template-columns:1fr 70px 28px}
+  .task-row input:nth-child(2),.task-row input:nth-child(3),.task-row-header span:nth-child(2),.task-row-header span:nth-child(3){display:none}
+  nav{padding:0 1rem}main{padding:1.25rem 1rem}
+  .leave-form-grid{grid-template-columns:1fr 1fr}
+  .nav-tabs{flex-wrap:wrap;gap:1px}
+  .nav-tab{padding:5px 8px;font-size:11.5px}
+  .ai-msg{max-width:95%}
+  .ai-suggestions{gap:4px}
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="logo"><div class="logo-dot"></div>WorkLog</div>
+
+    <!-- STEP 1: Enter email -->
+    <div class="otp-step active" id="login-step-email">
+      <div class="login-sub">Sign in with your BSharp Corp email</div>
+      <input type="email" id="login-email" placeholder="yourname@bsharpcorp.com" autocomplete="email" onkeydown="if(event.key==='Enter')sendOTP()"/>
+      <button class="login-btn" id="send-otp-btn" onclick="sendOTP()">Send verification code →</button>
+      <div class="login-error" id="login-error"></div>
+      <div class="login-info">A 6-digit code will be sent to your email</div>
+    </div>
+
+    <!-- STEP 2: Enter OTP -->
+    <div class="otp-step" id="login-step-otp">
+      <div class="login-sub">Enter the verification code</div>
+      <div class="otp-email-display" id="otp-email-display">email@bsharpcorp.com</div>
+      <div class="otp-input-group" id="otp-inputs">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+      </div>
+      <button class="login-btn" id="verify-otp-btn" onclick="verifyOTP()">Verify & sign in →</button>
+      <div class="login-error" id="otp-error"></div>
+      <div class="otp-resend">
+        Didn't receive the code? <button id="resend-btn" onclick="sendOTP(true)" disabled>Resend</button>
+        <span id="resend-timer"></span>
+      </div>
+      <button class="otp-back" onclick="backToEmail()">← Change email</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- HR PIN MODAL -->
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-box">
+    <div style="font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:4px">HR Access Required</div>
+    <div style="color:var(--text2);font-size:13px">Enter the HR PIN to access this section</div>
+    <input type="password" id="pin-input" maxlength="6" placeholder="••••" onkeydown="if(event.key==='Enter')checkPin()"/>
+    <button class="login-btn" onclick="checkPin()" style="margin-bottom:6px">Unlock</button>
+    <button onclick="closePinOverlay()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif">Cancel</button>
+    <div class="login-error" id="pin-error"></div>
+  </div>
+</div>
+
+<nav>
+  <div class="logo"><div class="logo-dot"></div>WorkLog</div>
+  <div class="nav-tabs" id="nav-tabs">
+    <button class="nav-tab active" onclick="switchPage('submit',this)">Submit Log</button>
+    <button class="nav-tab nav-hr" onclick="switchPage('dashboard',this)">Dashboard</button>
+    <button class="nav-tab nav-hr" onclick="switchPage('report',this)">Weekly Report</button>
+    <button class="nav-tab nav-hr" onclick="switchPage('leave',this)">Leave Tracker</button>
+    <button class="nav-tab nav-hr" onclick="switchPage('ai',this)">AI Assistant</button>
+  </div>
+  <div class="nav-right" style="display:flex;align-items:center;gap:10px">
+    <span id="today-label"></span>
+    <button class="user-badge" id="user-badge" onclick="handleLogout()" title="Click to sign out" style="display:none">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-display-name">User</span>
+    </button>
+  </div>
+</nav>
+<div class="toast" id="toast"></div>
+<main>
+
+<!-- ===== SUBMIT ===== -->
+<div class="page active" id="page-submit">
+  <div style="margin-bottom:1.5rem">
+    <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">Daily Work Log</div>
+    <div style="color:var(--text2);font-size:13.5px">Fill in what you worked on today and how long you spent.</div>
+  </div>
+  <div class="card">
+    <div class="card-title"><div class="card-title-icon">👤</div> Employee details</div>
+    <div class="field-grid">
+      <div class="field"><label>Full name</label>
+        <select id="f-name" onchange="autoFillTeam()">
+          <option value="">— Select employee —</option>
+          <option data-team="Customer Success">Akash Kateemanee</option>
+          <option data-team="Technical">Avinash S</option>
+          <option data-team="Technical">Azhar Rafiq Majkure</option>
+          <option data-team="Technical">Chandana v</option>
+          <option data-team="Technical">D Lakshmi</option>
+          <option data-team="Customer Success">Eada Jaison</option>
+          <option data-team="Technical">Geetha H G</option>
+          <option data-team="Director">Gopal Swaminathan</option>
+          <option data-team="Customer Success">Kavya Rajkumar</option>
+          <option data-team="Admin">Lakshmi Raj</option>
+          <option data-team="Customer Success">Manjula Jagadish</option>
+          <option data-team="Marketing">Mohammed L</option>
+          <option data-team="Technical">Nandini S</option>
+          <option data-team="Technical">Nikhil Pk</option>
+          <option data-team="Customer Success">Ojaswani Sahu</option>
+          <option data-team="Customer Success">Pavan Kumar R</option>
+          <option data-team="Customer Success">Rajeev Mehta</option>
+          <option data-team="Technical">Ranjitha P</option>
+          <option data-team="Marketing">Robert Hitler</option>
+          <option data-team="Technical">Stebin Sabu</option>
+          <option data-team="Customer Success">Syed Waqhas</option>
+          <option data-team="Technical">Vishwantha</option>
+          <option data-team="Technical">Jasmine Mary</option>
+          <option data-team="Technical">Tanuj</option>
+        </select>
+      </div>
+      <div class="field"><label>Team</label>
+        <input type="text" id="f-team" readonly style="background:var(--surface2);color:var(--text2);cursor:not-allowed" placeholder="Auto-filled on name selection"/>
+      </div>
+      <div class="field"><label>Date</label><input type="date" id="f-date"/></div>
+      <div class="field"><label>Day type</label>
+        <select id="f-daytype">
+          <option>Regular workday</option>
+          <option>Weekend / extra day</option>
+          <option>Public holiday</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><div class="card-title-icon">🗂</div> Tasks & hours</div>
+    <div class="task-row-header">
+      <span>Task / work item</span><span>Description</span><span>Sprint name</span>
+      <span style="text-align:center">Hours</span><span></span>
+    </div>
+    <div class="task-list" id="task-list"></div>
+    <button class="add-task-btn" onclick="addTask()">+ Add task</button>
+    <div class="total-bar">
+      <span>Total hours logged</span>
+      <span class="total-hrs" id="total-display">0h</span>
+    </div>
+  </div>
+  <button class="submit-btn" id="submit-btn" onclick="submitLog()">Submit daily log →</button>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div class="page" id="page-dashboard">
+  <div class="report-header">
+    <div class="report-title">HR Dashboard</div>
+    <div class="week-nav">
+      <button onclick="changeWeek(-1)">‹</button>
+      <span id="dash-week-label"></span>
+      <button onclick="changeWeek(1)">›</button>
+    </div>
+  </div>
+
+  <!-- Who hasn't submitted today -->
+  <div class="card" id="not-submitted-card">
+    <div class="card-title"><div class="card-title-icon">📋</div> Today's submission status</div>
+    <div id="not-submitted-grid" class="emp-grid"><span class="spinner"></span></div>
+  </div>
+
+  <div class="metric-grid" id="metric-grid">
+    <div class="metric-card"><div class="metric-label">Total hours</div><div class="metric-value">—</div></div>
+    <div class="metric-card"><div class="metric-label">Employees logged</div><div class="metric-value">—</div></div>
+    <div class="metric-card"><div class="metric-label">Total entries</div><div class="metric-value">—</div></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+      <div class="section-divider" style="margin-bottom:0">All log entries</div>
+      <div class="filters">
+        <span class="filter-label">Filter:</span>
+        <select id="filter-team" onchange="applyFilters()">
+          <option value="">All teams</option>
+          <option>Customer Success</option><option>Technical</option>
+          <option>Marketing</option><option>Director</option><option>Admin</option>
+        </select>
+        <select id="filter-day" onchange="applyFilters()">
+          <option value="">All days</option>
+          <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+          <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+        </select>
+        <input type="text" id="filter-search" placeholder="Search name..." oninput="applyFilters()" style="width:130px"/>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Employee</th><th>Team</th><th>Task</th><th>Sprint</th><th style="text-align:right">Hours</th></tr></thead>
+        <tbody id="log-tbody"><tr class="loading-row"><td colspan="6"><span class="spinner"></span>Loading entries...</td></tr></tbody>
+      </table>
+      <div class="empty-state" id="empty-state" style="display:none">No entries found. Try adjusting your filters.</div>
+    </div>
+  </div>
+  <div style="text-align:right;margin-top:.5rem">
+    <button class="export-btn" onclick="exportCSV()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M4 7l4 4 4-4M2 12v2h12v-2"/></svg>
+      Export to CSV
+    </button>
+  </div>
+</div>
+
+<!-- ===== WEEKLY REPORT ===== -->
+<div class="page" id="page-report">
+  <div class="report-header">
+    <div class="report-title">Weekly Summary</div>
+    <button class="export-btn" onclick="exportCSV()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M4 7l4 4 4-4M2 12v2h12v-2"/></svg>
+      Export CSV
+    </button>
+  </div>
+
+  <!-- This week vs last week -->
+  <div class="metric-grid-4" id="report-metrics">
+    <div class="metric-card"><div class="metric-label">Total hours</div><div class="metric-value">—</div></div>
+    <div class="metric-card"><div class="metric-label">Active employees</div><div class="metric-value">—</div></div>
+    <div class="metric-card"><div class="metric-label">Avg per person</div><div class="metric-value">—</div></div>
+    <div class="metric-card"><div class="metric-label">vs last week</div><div class="metric-value">—</div></div>
+  </div>
+
+  <div class="card" id="team-breakdown"></div>
+
+  <!-- Hours by individual -->
+  <div class="card" id="individual-breakdown"></div>
+
+  <!-- vs last week detail -->
+  <div class="card" id="vsweek-breakdown"></div>
+
+  <div class="card" id="sprint-breakdown"></div>
+</div>
+
+<!-- ===== LEAVE TRACKER ===== -->
+<div class="page" id="page-leave">
+  <div class="report-header">
+    <div class="report-title">Leave Tracker</div>
+    <button class="export-btn" onclick="exportLeaveCSV()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M4 7l4 4 4-4M2 12v2h12v-2"/></svg>
+      Export CSV
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><div class="card-title-icon">➕</div> Add leave entry</div>
+    <div class="leave-form-grid">
+      <div class="field"><label>Employee</label>
+        <select id="lv-name">
+          <option value="">— Select —</option>
+          <option>Akash Kateemanee</option><option>Avinash S</option><option>Azhar Rafiq Majkure</option>
+          <option>Chandana v</option><option>D Lakshmi</option><option>Eada Jaison</option>
+          <option>Geetha H G</option><option>Gopal Swaminathan</option><option>Kavya Rajkumar</option>
+          <option>Lakshmi Raj</option><option>Manjula Jagadish</option><option>Mohammed L</option>
+          <option>Nandini S</option><option>Nikhil Pk</option><option>Ojaswani Sahu</option>
+          <option>Pavan Kumar R</option><option>Rajeev Mehta</option><option>Ranjitha P</option>
+          <option>Robert Hitler</option><option>Stebin Sabu</option><option>Syed Waqhas</option>
+          <option>Vishwantha</option><option>Jasmine Mary</option><option>Tanuj</option>
+        </select>
+      </div>
+      <div class="field"><label>Leave type</label>
+        <select id="lv-type">
+          <option>Sick leave</option><option>Annual leave</option>
+          <option>Personal leave</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field"><label>From date</label><input type="date" id="lv-from"/></div>
+      <div class="field"><label>To date</label><input type="date" id="lv-to"/></div>
+      <div class="field"><label>Reason (optional)</label><input type="text" id="lv-reason" placeholder="e.g. Medical appointment"/></div>
+      <div class="field" style="justify-content:flex-end">
+        <button class="submit-btn" style="padding:9px 20px;width:auto" onclick="addLeave()">Add Leave</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary counts -->
+  <div class="metric-grid" id="leave-metrics">
+    <div class="metric-card"><div class="metric-label">Total leaves this month</div><div class="metric-value">—</div></div>
+    <div class="metric-card"><div class="metric-label">Employees on leave today</div><div class="metric-value">—</div></div>
+    <div class="metric-card"><div class="metric-label">Most leave days</div><div class="metric-value">—</div></div>
+  </div>
+
+  <div class="card">
+    <div class="section-divider">All leave entries</div>
+    <div class="filters">
+      <select id="lv-filter-name" onchange="renderLeaveTable()">
+        <option value="">All employees</option>
+        <option>Akash Kateemanee</option><option>Avinash S</option><option>Azhar Rafiq Majkure</option>
+        <option>Chandana v</option><option>D Lakshmi</option><option>Eada Jaison</option>
+        <option>Geetha H G</option><option>Gopal Swaminathan</option><option>Kavya Rajkumar</option>
+        <option>Lakshmi Raj</option><option>Manjula Jagadish</option><option>Mohammed L</option>
+        <option>Nandini S</option><option>Nikhil Pk</option><option>Ojaswani Sahu</option>
+        <option>Pavan Kumar R</option><option>Rajeev Mehta</option><option>Ranjitha P</option>
+        <option>Robert Hitler</option><option>Stebin Sabu</option><option>Syed Waqhas</option>
+        <option>Vishwantha</option><option>Jasmine Mary</option><option>Tanuj</option>
+      </select>
+      <select id="lv-filter-type" onchange="renderLeaveTable()">
+        <option value="">All types</option>
+        <option>Sick leave</option><option>Annual leave</option><option>Personal leave</option><option>Other</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th></th></tr></thead>
+        <tbody id="leave-tbody"></tbody>
+      </table>
+      <div class="empty-state" id="leave-empty" style="display:none">No leave entries yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AI ASSISTANT ===== -->
+<div class="page" id="page-ai">
+  <div class="ai-container">
+    <div style="margin-bottom:1.5rem">
+      <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">AI Assistant</div>
+      <div style="color:var(--text2);font-size:13.5px">Ask questions about your work log data in plain English.</div>
+    </div>
+    <div class="card">
+      <div class="ai-suggestions" id="ai-suggestions">
+        <button class="ai-suggest-btn" onclick="askAI(this.textContent)">How many hours did the Technical team log this week?</button>
+        <button class="ai-suggest-btn" onclick="askAI(this.textContent)">Who hasn't submitted their log today?</button>
+        <button class="ai-suggest-btn" onclick="askAI(this.textContent)">Compare team hours this week vs last week</button>
+        <button class="ai-suggest-btn" onclick="askAI(this.textContent)">What is the average hours per person this week?</button>
+      </div>
+      <div class="ai-chat" id="ai-chat">
+        <div class="ai-msg system">Ask any question about your work log data. I'll fetch the latest data and answer.</div>
+      </div>
+      <div class="ai-input-row">
+        <input type="text" id="ai-input" placeholder="e.g. Who logged the most hours this week?" onkeydown="if(event.key==='Enter'&&!event.shiftKey)askAI()"/>
+        <button id="ai-send-btn" onclick="askAI()">Ask</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCQ6idxkTeWzI6099yIoWwF5s4QPzf85E0UFgNnUn3wUQNux-A_sYOO_81FiHJNFK0XQ/exec';
+const ALL_EMPLOYEES = ['Akash Kateemanee','Avinash S','Azhar Rafiq Majkure','Chandana v','D Lakshmi','Eada Jaison','Geetha H G','Gopal Swaminathan','Kavya Rajkumar','Lakshmi Raj','Manjula Jagadish','Mohammed L','Nandini S','Nikhil Pk','Ojaswani Sahu','Pavan Kumar R','Rajeev Mehta','Ranjitha P','Robert Hitler','Stebin Sabu','Syed Waqhas','Vishwantha','Jasmine Mary','Tanuj'];
+
+// Employee email → name & team mapping
+const EMPLOYEE_MAP = {
+  'akash@bsharpcorp.com': { name:'Akash Kateemanee', team:'Customer Success' },
+  'avinash.s@bsharpcorp.com': { name:'Avinash S', team:'Technical' },
+  'azhar.majkure@bsharpcorp.com': { name:'Azhar Rafiq Majkure', team:'Technical' },
+  'chandana.v@bsharpcorp.com': { name:'Chandana v', team:'Technical' },
+  'geetha.hg@bsharpcorp.com': { name:'Geetha H G', team:'Technical' },
+  'gopal@bsharpcorp.com': { name:'Gopal Swaminathan', team:'Director' },
+  'jaison.eada@bsharpcorp.com': { name:'Eada Jaison', team:'Customer Success' },
+  'jasmine@bsharpcorp.com': { name:'Jasmine Mary', team:'Technical' },
+  'kavya.rajkumar@bsharpcorp.com': { name:'Kavya Rajkumar', team:'Customer Success' },
+  'lakshmi.dakyanoik@bsharpcorp.com': { name:'D Lakshmi', team:'Technical' },
+  'lakshmi.raj@bsharpcorp.com': { name:'Lakshmi Raj', team:'Admin' },
+  'manjula.jagadish@bsharpcorp.com': { name:'Manjula Jagadish', team:'Customer Success' },
+  'mohammed.adam@bsharpcorp.com': { name:'Mohammed L', team:'Marketing' },
+  'nandini@bsharpcorp.com': { name:'Nandini S', team:'Technical' },
+  'nikhil.pk@bsharpcorp.com': { name:'Nikhil Pk', team:'Technical' },
+  'ojaswani.sahu@bsharpcorp.com': { name:'Ojaswani Sahu', team:'Customer Success' },
+  'pavan.ram@bsharpcorp.com': { name:'Pavan Kumar R', team:'Customer Success' },
+  'rajeev.mehta@bsharpcorp.com': { name:'Rajeev Mehta', team:'Customer Success' },
+  'ranjitha.p@bsharpcorp.com': { name:'Ranjitha P', team:'Technical' },
+  'robert.h@bsharpcorp.com': { name:'Robert Hitler', team:'Marketing' },
+  'stebin@bsharpcorp.com': { name:'Stebin Sabu', team:'Technical' },
+  'syed.waqhas@bsharpcorp.com': { name:'Syed Waqhas', team:'Customer Success' },
+  'tanuj@bsharpcorp.com': { name:'Tanuj', team:'Technical' },
+  'vishwanatha@bsharpcorp.com': { name:'Vishwantha', team:'Technical' }
+};
+
+// HR PIN for dashboard/report access (change this to your desired PIN)
+const HR_PIN = '1234';
+
+// Anthropic API key
+const ANTHROPIC_KEY = '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';
+
+// EmailJS config — replace these 3 values after setting up EmailJS (see instructions below)
+// 1. Go to https://www.emailjs.com and create a free account
+// 2. Add an Email Service (connect your Microsoft/Outlook account) → copy the Service ID
+// 3. Create an Email Template with these variables: {{to_email}}, {{to_name}}, {{otp_code}}
+//    Subject: WorkLog — Your verification code
+//    Body: Hi {{to_name}}, your WorkLog verification code is: {{otp_code}}
+// 4. Copy the Template ID
+// 5. Go to Account → API Keys → copy the Public Key
+const EMAILJS_PUBLIC_KEY = 'RlPyRj-3noMB8beie';
+const EMAILJS_SERVICE_ID = 'service_gcq161p';
+const EMAILJS_TEMPLATE_ID = 'template_w0wosp2';
+
+let dashAllRows = [];
+let dashWeekOffset = 0;
+let currentUser = null; // { email, name, team }
+let hrUnlocked = false;
+let pendingHRPage = null;
+
+// ============================================================
+// OTP EMAIL LOGIN SYSTEM
+// ============================================================
+var pendingOTPEmail = '';
+var generatedOTP = '';
+var resendCountdown = null;
+
+function checkExistingLogin() {
+  try {
+    var saved = JSON.parse(localStorage.getItem('wl_login') || 'null');
+    if (saved && saved.email && saved.expires && Date.now() < saved.expires) {
+      currentUser = { email: saved.email, name: saved.name, team: saved.team };
+      applyLogin();
+      return;
+    }
+  } catch(e){}
+  document.getElementById('login-overlay').style.display = 'flex';
+  setupOTPInputs();
+}
+
+function setupOTPInputs() {
+  var inputs = document.querySelectorAll('#otp-inputs input');
+  inputs.forEach(function(inp, idx) {
+    inp.addEventListener('input', function(e) {
+      var val = e.target.value.replace(/[^0-9]/g, '');
+      e.target.value = val;
+      if (val && idx < inputs.length - 1) inputs[idx+1].focus();
+      // Auto-verify when all 6 digits entered
+      if (idx === inputs.length - 1 && val) {
+        var code = Array.from(inputs).map(function(i){ return i.value; }).join('');
+        if (code.length === 6) setTimeout(verifyOTP, 100);
+      }
+    });
+    inp.addEventListener('keydown', function(e) {
+      if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+        inputs[idx-1].focus();
+        inputs[idx-1].value = '';
+      }
+      if (e.key === 'Enter') verifyOTP();
+    });
+    // Handle paste
+    inp.addEventListener('paste', function(e) {
+      e.preventDefault();
+      var pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+      for (var i = 0; i < Math.min(pasted.length, 6); i++) {
+        inputs[i].value = pasted[i];
+      }
+      if (pasted.length >= 6) {
+        inputs[5].focus();
+        setTimeout(verifyOTP, 100);
+      } else {
+        inputs[Math.min(pasted.length, 5)].focus();
+      }
+    });
+  });
+}
+
+function sendOTP(isResend) {
+  var email = document.getElementById('login-email').value.trim().toLowerCase();
+  var errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  if (!email) { errEl.textContent = 'Please enter your email address'; return; }
+  if (!email.endsWith('@bsharpcorp.com')) {
+    errEl.textContent = 'Only @bsharpcorp.com email addresses are accepted';
+    return;
+  }
+  var emp = EMPLOYEE_MAP[email];
+  if (!emp) {
+    errEl.textContent = 'Email not found in employee list. Contact HR if this is an error.';
+    return;
+  }
+
+  if (EMAILJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') {
+    errEl.textContent = 'EmailJS not configured. See setup instructions in the HTML file.';
+    return;
+  }
+
+  pendingOTPEmail = email;
+  // Generate a 6-digit OTP
+  generatedOTP = String(Math.floor(100000 + Math.random() * 900000));
+
+  var btn = document.getElementById('send-otp-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending code...';
+
+  // Send OTP via EmailJS
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    to_email: email,
+    to_name: emp.name,
+    otp_code: generatedOTP
+  }).then(function() {
+    showOTPStep(isResend);
+    btn.disabled = false;
+    btn.textContent = 'Send verification code →';
+  }).catch(function(err) {
+    errEl.textContent = 'Could not send code: ' + (err.text || err.message || 'Unknown error');
+    btn.disabled = false;
+    btn.textContent = 'Send verification code →';
+  });
+}
+
+function showOTPStep(isResend) {
+  document.getElementById('login-step-email').classList.remove('active');
+  document.getElementById('login-step-otp').classList.add('active');
+  document.getElementById('otp-email-display').textContent = pendingOTPEmail;
+  document.querySelectorAll('#otp-inputs input').forEach(function(i){ i.value=''; });
+  document.querySelectorAll('#otp-inputs input')[0].focus();
+  document.getElementById('otp-error').textContent = '';
+  startResendTimer();
+  if (isResend) showToast('✓ New code sent to ' + pendingOTPEmail);
+}
+
+function startResendTimer() {
+  var seconds = 60;
+  var resendBtn = document.getElementById('resend-btn');
+  var timerEl = document.getElementById('resend-timer');
+  resendBtn.disabled = true;
+  if (resendCountdown) clearInterval(resendCountdown);
+  resendCountdown = setInterval(function() {
+    seconds--;
+    timerEl.textContent = '(' + seconds + 's)';
+    if (seconds <= 0) {
+      clearInterval(resendCountdown);
+      resendBtn.disabled = false;
+      timerEl.textContent = '';
+    }
+  }, 1000);
+  timerEl.textContent = '(60s)';
+}
+
+function verifyOTP() {
+  var inputs = document.querySelectorAll('#otp-inputs input');
+  var code = Array.from(inputs).map(function(i){ return i.value; }).join('');
+  var errEl = document.getElementById('otp-error');
+  errEl.textContent = '';
+
+  if (code.length < 6) { errEl.textContent = 'Please enter all 6 digits'; return; }
+  if (code !== generatedOTP) {
+    errEl.textContent = 'Invalid code. Please check and try again.';
+    // Shake the inputs
+    document.getElementById('otp-inputs').style.animation = 'none';
+    setTimeout(function(){ document.getElementById('otp-inputs').style.animation = ''; }, 10);
+    return;
+  }
+
+  // OTP verified — log the user in
+  var emp = EMPLOYEE_MAP[pendingOTPEmail];
+  currentUser = { email: pendingOTPEmail, name: emp.name, team: emp.team };
+  localStorage.setItem('wl_login', JSON.stringify({
+    email: pendingOTPEmail, name: emp.name, team: emp.team,
+    expires: Date.now() + (7 * 24 * 60 * 60 * 1000)
+  }));
+  generatedOTP = '';
+  pendingOTPEmail = '';
+  if (resendCountdown) clearInterval(resendCountdown);
+  applyLogin();
+  showToast('✓ Signed in as ' + currentUser.name);
+}
+
+function backToEmail() {
+  document.getElementById('login-step-otp').classList.remove('active');
+  document.getElementById('login-step-email').classList.add('active');
+  document.getElementById('login-email').focus();
+  if (resendCountdown) clearInterval(resendCountdown);
+}
+
+function applyLogin() {
+  document.getElementById('login-overlay').style.display = 'none';
+  // Show user badge
+  var badge = document.getElementById('user-badge');
+  badge.style.display = 'flex';
+  document.getElementById('user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
+  document.getElementById('user-display-name').textContent = currentUser.name.split(' ')[0];
+  // Auto-fill submit form
+  var nameSelect = document.getElementById('f-name');
+  for (var i = 0; i < nameSelect.options.length; i++) {
+    if (nameSelect.options[i].text === currentUser.name) {
+      nameSelect.selectedIndex = i; autoFillTeam(); break;
+    }
+  }
+}
+
+function handleLogout() {
+  if (confirm('Sign out of WorkLog?')) {
+    localStorage.removeItem('wl_login');
+    hrUnlocked = false;
+    currentUser = null;
+    location.reload();
+  }
+}
+
+// HR PIN check for restricted tabs
+function requireHR(page, btn) {
+  if (hrUnlocked) return true;
+  pendingHRPage = { page: page, btn: btn };
+  document.getElementById('pin-overlay').style.display = 'flex';
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-error').textContent = '';
+  setTimeout(function(){ document.getElementById('pin-input').focus(); }, 100);
+  return false;
+}
+
+function checkPin() {
+  var pin = document.getElementById('pin-input').value;
+  if (pin === HR_PIN) {
+    hrUnlocked = true;
+    document.getElementById('pin-overlay').style.display = 'none';
+    if (pendingHRPage) {
+      doSwitchPage(pendingHRPage.page, pendingHRPage.btn);
+      pendingHRPage = null;
+    }
+  } else {
+    document.getElementById('pin-error').textContent = 'Incorrect PIN. Try again.';
+  }
+}
+
+function closePinOverlay() {
+  document.getElementById('pin-overlay').style.display = 'none';
+  pendingHRPage = null;
+}
+
+// ============================================================
+// SHEETS — JSONP read, no-cors write
+// ============================================================
+async function postToSheet(rows) {
+  try {
+    var cached = JSON.parse(localStorage.getItem('wl_cache') || '[]');
+    rows.forEach(function(r){ cached.push(r); });
+    localStorage.setItem('wl_cache', JSON.stringify(cached));
+  } catch(e){}
+  await fetch(SCRIPT_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: {'Content-Type':'text/plain'},
+    body: JSON.stringify({ action: 'append', rows })
+  });
+  return { status: 'ok' };
+}
+
+function fetchFromSheet() {
+  return new Promise(function(resolve, reject) {
+    var cb = 'wl_' + Date.now();
+    var script = document.createElement('script');
+    var done = false;
+    var timer = setTimeout(function() {
+      if (done) return; done = true; cleanup();
+      var c = localStorage.getItem('wl_cache');
+      if (c) { try { resolve(JSON.parse(c)); return; } catch(e){} }
+      reject(new Error('Timed out. Check Apps Script deployment.'));
+    }, 12000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e){}
+      try { if (script.parentNode) script.parentNode.removeChild(script); } catch(e){}
+    }
+    window[cb] = function(data) {
+      if (done) return; done = true; cleanup();
+      if (data && data.status === 'ok') {
+        var rows = data.data || [];
+        try { localStorage.setItem('wl_cache', JSON.stringify(rows)); } catch(e){}
+        resolve(rows);
+      } else {
+        reject(new Error((data && data.message) || 'Apps Script error'));
+      }
+    };
+    script.src = SCRIPT_URL + '?callback=' + cb + '&t=' + Date.now();
+    script.onerror = function() {
+      if (done) return; done = true; cleanup();
+      var c = localStorage.getItem('wl_cache');
+      if (c) { try { resolve(JSON.parse(c)); return; } catch(e){} }
+      reject(new Error('Could not reach Apps Script.'));
+    };
+    document.head.appendChild(script);
+  });
+}
+
+// ============================================================
+// DATE HELPERS
+// ============================================================
+function toDateObj(str) {
+  if (!str) return null;
+  // Handle "Mon Mar 16 2026 ..." and "2026-03-16"
+  var d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+}
+function toISO(d) {
+  if (!d) return '';
+  var y = d.getFullYear();
+  var m = String(d.getMonth()+1).padStart(2,'0');
+  var dd = String(d.getDate()).padStart(2,'0');
+  return y + '-' + m + '-' + dd;
+}
+function getWeekRange(offset) {
+  var now = new Date(); var day = now.getDay();
+  var mon = new Date(now);
+  mon.setDate(now.getDate() - (day===0?6:day-1) + (offset*7));
+  mon.setHours(0,0,0,0);
+  var sun = new Date(mon); sun.setDate(mon.getDate()+6); sun.setHours(23,59,59,999);
+  return { start: mon, end: sun };
+}
+function inWeek(dateStr, offset) {
+  var d = toDateObj(dateStr); if (!d) return false;
+  var day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  var r = getWeekRange(offset);
+  var s = new Date(r.start.getFullYear(), r.start.getMonth(), r.start.getDate());
+  var e = new Date(r.end.getFullYear(), r.end.getMonth(), r.end.getDate());
+  return day >= s && day <= e;
+}
+function fmtDate(str) {
+  var d = toDateObj(str); if (!d) return str;
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+}
+function dayName(str) {
+  var d = toDateObj(str); if (!d) return '';
+  return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getDay()];
+}
+function todayISO() { return toISO(new Date()); }
+
+// ============================================================
+// SUBMIT PAGE
+// ============================================================
+var taskCounter = 0;
+function autoFillTeam() {
+  var sel = document.getElementById('f-name');
+  var opt = sel.options[sel.selectedIndex];
+  document.getElementById('f-team').value = opt ? (opt.getAttribute('data-team')||'') : '';
+}
+function addTask(task,desc,sprint,hours) {
+  task=task||''; desc=desc||''; sprint=sprint||''; hours=hours||'';
+  taskCounter++;
+  var id = 'task-'+taskCounter;
+  var div = document.createElement('div');
+  div.className='task-row'; div.id=id;
+  div.innerHTML = '<input type="text" placeholder="e.g. Dashboard redesign" value="'+task+'" oninput="calcTotal()"/>'+
+    '<input type="text" placeholder="Brief description" value="'+desc+'"/>'+
+    '<input type="text" placeholder="e.g. Sprint 2 / BAU" value="'+sprint+'"/>'+
+    '<input type="number" class="hrs" placeholder="hrs" min="0.5" max="24" step="0.5" value="'+hours+'" oninput="calcTotal()"/>'+
+    '<button class="remove-task" onclick="removeTask(\''+id+'\')">×</button>';
+  document.getElementById('task-list').appendChild(div);
+  calcTotal();
+}
+function removeTask(id) { var el=document.getElementById(id); if(el) el.remove(); calcTotal(); }
+function calcTotal() {
+  var total=0;
+  document.querySelectorAll('#task-list .hrs').forEach(function(i){ total+=parseFloat(i.value)||0; });
+  document.getElementById('total-display').textContent = total>0 ? total+'h' : '0h';
+}
+async function submitLog() {
+  var name = document.getElementById('f-name').value.trim();
+  var team = document.getElementById('f-team').value.trim();
+  var date = document.getElementById('f-date').value;
+  var daytype = document.getElementById('f-daytype').value;
+  var dname = date ? dayName(date) : '';
+  if (!name) { showToast('Please select your name',true); return; }
+  if (!date)  { showToast('Please select a date',true); return; }
+  var rows=[];
+  document.querySelectorAll('#task-list .task-row').forEach(function(row){
+    var inp=row.querySelectorAll('input');
+    var t=inp[0].value.trim(), d=inp[1].value.trim(), s=inp[2].value.trim(), h=parseFloat(inp[3].value)||0;
+    if(t) rows.push([date,dname,name,team,daytype,t,d,s||'—',h,'']);
+  });
+  if (rows.length===0) { showToast('Please add at least one task',true); return; }
+  var btn=document.getElementById('submit-btn');
+  btn.disabled=true; btn.textContent='Submitting...';
+  try {
+    await postToSheet(rows);
+    showToast('✓ Log submitted for '+name);
+    document.getElementById('f-name').value='';
+    document.getElementById('f-team').value='';
+    document.getElementById('f-date').valueAsDate=new Date();
+    document.getElementById('task-list').innerHTML='';
+    addTask();
+  } catch(e) { showToast('Error: '+e.message,true); }
+  finally { btn.disabled=false; btn.textContent='Submit daily log →'; }
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function changeWeek(dir) { dashWeekOffset+=dir; renderDashboard(); }
+
+async function renderDashboard() {
+  var r=getWeekRange(dashWeekOffset);
+  var label=r.start.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' – '+r.end.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('dash-week-label').textContent=label;
+  document.getElementById('log-tbody').innerHTML='<tr class="loading-row"><td colspan="7"><span class="spinner"></span>Loading entries...</td></tr>';
+  try {
+    dashAllRows = await fetchFromSheet();
+    renderNotSubmitted();
+    updateMetrics();
+    applyFilters();
+  } catch(e) {
+    document.getElementById('log-tbody').innerHTML='<tr class="loading-row"><td colspan="7" style="color:var(--red)">'+e.message+'</td></tr>';
+  }
+}
+
+function renderNotSubmitted() {
+  var today = todayISO();
+  var submittedToday = new Set(dashAllRows.filter(function(r){ return toISO(toDateObj(r[0]))===today; }).map(function(r){ return r[2]; }));
+  var grid = document.getElementById('not-submitted-grid');
+  grid.innerHTML = ALL_EMPLOYEES.map(function(emp){
+    var present = submittedToday.has(emp);
+    return '<div class="emp-chip '+(present?'present':'missing')+'">'+
+      '<div class="emp-chip-dot"></div>'+
+      '<span style="font-size:12px">'+emp+'</span>'+
+    '</div>';
+  }).join('');
+}
+
+function updateMetrics() {
+  var filtered = dashAllRows.filter(function(r){ return inWeek(r[0],dashWeekOffset); });
+  var totalHrs = filtered.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+  var uniqueEmps = new Set(filtered.map(function(r){ return r[2]; })).size;
+  var teams = new Set(filtered.map(function(r){ return r[3]; })).size;
+  document.getElementById('metric-grid').innerHTML =
+    '<div class="metric-card"><div class="metric-label">Total hours</div><div class="metric-value">'+totalHrs+'</div><div class="metric-sub">across all teams</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Employees logged</div><div class="metric-value">'+uniqueEmps+'</div><div class="metric-sub">'+teams+' teams active</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Total entries</div><div class="metric-value">'+filtered.length+'</div><div class="metric-sub">log submissions</div></div>';
+}
+
+function applyFilters() {
+  var teamF=(document.getElementById('filter-team')||{}).value||'';
+  var dayF=(document.getElementById('filter-day')||{}).value||'';
+  var search=((document.getElementById('filter-search')||{}).value||'').toLowerCase();
+  var rows=dashAllRows.filter(function(r){
+    if (!inWeek(r[0],dashWeekOffset)) return false;
+    if (teamF && r[3]!==teamF) return false;
+    if (dayF && (r[1]||dayName(r[0]))!==dayF) return false;
+    if (search && !r[2].toLowerCase().includes(search)) return false;
+    return true;
+  });
+  var tbody=document.getElementById('log-tbody');
+  var empty=document.getElementById('empty-state');
+  if (rows.length===0){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  var tClass={'Technical':'badge-tech','Customer Success':'badge-cs','Marketing':'badge-mkt'};
+  var tShort={'Technical':'Tech','Customer Success':'CS','Marketing':'Mktg','Director':'Dir','Admin':'Admin'};
+  tbody.innerHTML=rows.map(function(r){
+    return '<tr>'+
+      '<td class="muted">'+fmtDate(r[0])+'<br><span style="font-size:11px;color:var(--text3)">'+(r[1]||dayName(r[0]))+'</span></td>'+
+      '<td style="font-weight:500">'+r[2]+'</td>'+
+      '<td><span class="badge '+(tClass[r[3]]||'badge-other')+'">'+(tShort[r[3]]||r[3])+'</span></td>'+
+      '<td>'+r[5]+'</td>'+
+      '<td class="muted">'+r[7]+'</td>'+
+      '<td style="text-align:right;font-weight:600;color:var(--accent)">'+r[8]+'h</td>'+
+    '</tr>';
+  }).join('');
+}
+
+// ============================================================
+// WEEKLY REPORT
+// ============================================================
+async function renderReport() {
+  try {
+    var all = await fetchFromSheet();
+    var thisWeek = all.filter(function(r){ return inWeek(r[0],0); });
+    var lastWeek = all.filter(function(r){ return inWeek(r[0],-1); });
+    var totalHrs = thisWeek.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+    var lastHrs  = lastWeek.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+    var uniqueEmps = new Set(thisWeek.map(function(r){ return r[2]; })).size;
+    var diff = totalHrs - lastHrs;
+    var diffStr = (diff>0?'+':'')+diff+'h';
+    var diffClass = diff>0?'success':diff<0?'danger':'';
+
+    document.getElementById('report-metrics').innerHTML =
+      '<div class="metric-card"><div class="metric-label">Total hours</div><div class="metric-value">'+totalHrs+'</div><div class="metric-sub">this week</div></div>'+
+      '<div class="metric-card"><div class="metric-label">Active employees</div><div class="metric-value">'+uniqueEmps+'</div><div class="metric-sub">submitted logs</div></div>'+
+      '<div class="metric-card"><div class="metric-label">Avg per person</div><div class="metric-value">'+(uniqueEmps?(totalHrs/uniqueEmps).toFixed(1):0)+'h</div><div class="metric-sub">this week</div></div>'+
+      '<div class="metric-card '+diffClass+'"><div class="metric-label">vs last week</div><div class="metric-value">'+diffStr+'</div><div class="metric-sub">last week: '+lastHrs+'h</div></div>';
+
+    // Hours by team
+    var teams=['Technical','Customer Success','Marketing'];
+    var teamHrs={}, teamHrsLast={};
+    teams.forEach(function(t){ teamHrs[t]=0; teamHrsLast[t]=0; });
+    thisWeek.forEach(function(r){ teamHrs[r[3]]=(teamHrs[r[3]]||0)+(parseFloat(r[8])||0); });
+    lastWeek.forEach(function(r){ teamHrsLast[r[3]]=(teamHrsLast[r[3]]||0)+(parseFloat(r[8])||0); });
+    var maxH=Math.max.apply(null,teams.map(function(t){ return teamHrs[t]||0; }).concat([1]));
+    var tColors={'Technical':'tech','Customer Success':'cs','Marketing':'mkt'};
+    document.getElementById('team-breakdown').innerHTML =
+      '<div class="section-divider">Hours by team</div>'+
+      teams.map(function(t){
+        var h=teamHrs[t]||0, hl=teamHrsLast[t]||0, d=h-hl;
+        var dStr=(d>0?'+':'')+d+'h';
+        var dCls=d>0?'vs-up':d<0?'vs-down':'vs-same';
+        return '<div class="progress-row">'+
+          '<div class="progress-info"><span>'+t+'</span>'+
+          '<span style="display:flex;align-items:center;gap:8px"><span class="vs-change '+dCls+'">'+dStr+' vs last wk</span><strong>'+h+'h</strong></span></div>'+
+          '<div class="progress-bar"><div class="progress-fill fill-'+tColors[t]+'" style="width:'+Math.round(h/maxH*100)+'%"></div></div>'+
+        '</div>';
+      }).join('');
+
+    // Hours by individual employee
+    var empHrs={};
+    thisWeek.forEach(function(r){ empHrs[r[2]]=(empHrs[r[2]]||0)+(parseFloat(r[8])||0); });
+    var empEntries=Object.entries(empHrs).sort(function(a,b){ return b[1]-a[1]; });
+    var maxE=Math.max.apply(null,empEntries.map(function(e){ return e[1]; }).concat([1]));
+    document.getElementById('individual-breakdown').innerHTML =
+      '<div class="section-divider">Hours by employee</div>'+
+      (empEntries.length===0?'<div class="empty-state">No data this week.</div>':
+      empEntries.map(function(e){
+        return '<div class="progress-row">'+
+          '<div class="progress-info"><span>'+e[0]+'</span><strong>'+e[1]+'h</strong></div>'+
+          '<div class="progress-bar"><div class="progress-fill" style="width:'+Math.round(e[1]/maxE*100)+'%;background:var(--text2)"></div></div>'+
+        '</div>';
+      }).join(''));
+
+    // This week vs last week per employee
+    var empLast={};
+    lastWeek.forEach(function(r){ empLast[r[2]]=(empLast[r[2]]||0)+(parseFloat(r[8])||0); });
+    var allEmps=new Set(Object.keys(empHrs).concat(Object.keys(empLast)));
+    var vsRows=[];
+    allEmps.forEach(function(emp){
+      var tw=empHrs[emp]||0, lw=empLast[emp]||0, d=tw-lw;
+      vsRows.push({emp:emp,tw:tw,lw:lw,d:d});
+    });
+    vsRows.sort(function(a,b){ return b.tw-a.tw; });
+    document.getElementById('vsweek-breakdown').innerHTML =
+      '<div class="section-divider">This week vs last week — by employee</div>'+
+      (vsRows.length===0?'<div class="empty-state">No data yet.</div>':
+      vsRows.map(function(v){
+        var dStr=(v.d>0?'+':'')+v.d+'h';
+        var dCls=v.d>0?'vs-up':v.d<0?'vs-down':'vs-same';
+        return '<div class="vs-row">'+
+          '<span style="font-weight:500">'+v.emp+'</span>'+
+          '<span style="display:flex;align-items:center;gap:10px;font-size:13px">'+
+            '<span style="color:var(--text3)">Last: '+v.lw+'h</span>'+
+            '<span>This: '+v.tw+'h</span>'+
+            '<span class="vs-change '+dCls+'">'+dStr+'</span>'+
+          '</span>'+
+        '</div>';
+      }).join(''));
+
+    // Sprint breakdown
+    var sprintHrs={};
+    thisWeek.forEach(function(r){ sprintHrs[r[7]]=(sprintHrs[r[7]]||0)+(parseFloat(r[8])||0); });
+    var maxS=Math.max.apply(null,Object.values(sprintHrs).concat([1]));
+    document.getElementById('sprint-breakdown').innerHTML =
+      '<div class="section-divider">Hours by sprint</div>'+
+      (Object.keys(sprintHrs).length===0?'<div class="empty-state">No sprint data this week.</div>':
+      Object.entries(sprintHrs).sort(function(a,b){ return b[1]-a[1]; }).map(function(s){
+        return '<div class="progress-row">'+
+          '<div class="progress-info"><span>'+s[0]+'</span><strong>'+s[1]+'h</strong></div>'+
+          '<div class="progress-bar"><div class="progress-fill" style="width:'+Math.round(s[1]/maxS*100)+'%;background:var(--accent)"></div></div>'+
+        '</div>';
+      }).join(''));
+
+  } catch(e) {
+    document.getElementById('team-breakdown').innerHTML='<div style="color:var(--red);font-size:13px">Could not load data: '+e.message+'</div>';
+  }
+}
+
+// ============================================================
+// LEAVE TRACKER
+// ============================================================
+var leaveData = JSON.parse(localStorage.getItem('wl_leaves')||'[]');
+
+function saveLeaves() { localStorage.setItem('wl_leaves', JSON.stringify(leaveData)); }
+
+function addLeave() {
+  var name=document.getElementById('lv-name').value;
+  var type=document.getElementById('lv-type').value;
+  var from=document.getElementById('lv-from').value;
+  var to=document.getElementById('lv-to').value;
+  var reason=document.getElementById('lv-reason').value.trim();
+  if (!name) { showToast('Please select an employee',true); return; }
+  if (!from||!to) { showToast('Please select from and to dates',true); return; }
+  if (new Date(from)>new Date(to)) { showToast('From date must be before To date',true); return; }
+  leaveData.push({ id: Date.now(), name, type, from, to, reason });
+  saveLeaves();
+  showToast('✓ Leave added for '+name);
+  document.getElementById('lv-name').value='';
+  document.getElementById('lv-from').value='';
+  document.getElementById('lv-to').value='';
+  document.getElementById('lv-reason').value='';
+  renderLeaveTable();
+  renderLeaveMetrics();
+}
+
+function removeLeave(id) {
+  leaveData = leaveData.filter(function(l){ return l.id!==id; });
+  saveLeaves(); renderLeaveTable(); renderLeaveMetrics();
+}
+
+function diffDays(from,to) {
+  var ms=new Date(to)-new Date(from);
+  return Math.max(1, Math.round(ms/86400000)+1);
+}
+
+function renderLeaveMetrics() {
+  var now=new Date();
+  var monthStart=new Date(now.getFullYear(),now.getMonth(),1);
+  var monthEnd=new Date(now.getFullYear(),now.getMonth()+1,0);
+  var todayStr=todayISO();
+  var thisMonth=leaveData.filter(function(l){ return new Date(l.from)<=monthEnd && new Date(l.to)>=monthStart; });
+  var onToday=leaveData.filter(function(l){ return l.from<=todayStr && l.to>=todayStr; });
+  var empDays={};
+  leaveData.forEach(function(l){ empDays[l.name]=(empDays[l.name]||0)+diffDays(l.from,l.to); });
+  var topEmp=Object.entries(empDays).sort(function(a,b){ return b[1]-a[1]; })[0];
+  document.getElementById('leave-metrics').innerHTML=
+    '<div class="metric-card"><div class="metric-label">Total leaves this month</div><div class="metric-value">'+thisMonth.length+'</div><div class="metric-sub">entries logged</div></div>'+
+    '<div class="metric-card"><div class="metric-label">On leave today</div><div class="metric-value '+(onToday.length>0?'danger':'')+'">'+onToday.length+'</div><div class="metric-sub">'+(onToday.map(function(l){return l.name;}).join(', ')||'Nobody today')+'</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Most leave days</div><div class="metric-value">'+(topEmp?topEmp[1]:'—')+'</div><div class="metric-sub">'+(topEmp?topEmp[0]:'No entries yet')+'</div></div>';
+}
+
+function renderLeaveTable() {
+  var nameF=(document.getElementById('lv-filter-name')||{}).value||'';
+  var typeF=(document.getElementById('lv-filter-type')||{}).value||'';
+  var rows=leaveData.filter(function(l){
+    if (nameF && l.name!==nameF) return false;
+    if (typeF && l.type!==typeF) return false;
+    return true;
+  }).sort(function(a,b){ return new Date(b.from)-new Date(a.from); });
+  var tbody=document.getElementById('leave-tbody');
+  var empty=document.getElementById('leave-empty');
+  var lvClass={'Sick leave':'leave-sick','Annual leave':'leave-annual','Personal leave':'leave-personal','Other':'leave-other'};
+  if (rows.length===0){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML=rows.map(function(l){
+    return '<tr>'+
+      '<td style="font-weight:500">'+l.name+'</td>'+
+      '<td><span class="leave-badge '+(lvClass[l.type]||'leave-other')+'">'+l.type+'</span></td>'+
+      '<td class="muted">'+fmtDate(l.from)+'</td>'+
+      '<td class="muted">'+fmtDate(l.to)+'</td>'+
+      '<td style="font-weight:600">'+diffDays(l.from,l.to)+'d</td>'+
+      '<td class="muted">'+( l.reason||'—')+'</td>'+
+      '<td><button onclick="removeLeave('+l.id+')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px" title="Remove">×</button></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function exportLeaveCSV() {
+  var rows=[['Employee','Type','From','To','Days','Reason']].concat(
+    leaveData.map(function(l){ return [l.name,l.type,l.from,l.to,diffDays(l.from,l.to),l.reason||'']; })
+  );
+  var csv=rows.map(function(r){ return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob=new Blob([csv],{type:'text/csv'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url;
+  a.download='leaves_'+todayISO()+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('✓ Leave CSV exported');
+}
+
+// ============================================================
+// CSV EXPORT
+// ============================================================
+function exportCSV() {
+  var headers=['Date','Day','Employee','Team','Day Type','Task','Description','Sprint','Hours'];
+  var rows=[headers].concat(dashAllRows);
+  var csv=rows.map(function(r){ return r.map(function(c){ return '"'+String(c||'').replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob=new Blob([csv],{type:'text/csv'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url;
+  a.download='worklog_'+todayISO()+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('✓ CSV exported');
+}
+
+// ============================================================
+// NAV & UTILS
+// ============================================================
+function switchPage(page,btn) {
+  // HR-restricted pages need PIN
+  var hrPages = ['dashboard','report','leave','ai'];
+  if (hrPages.indexOf(page) !== -1 && !hrUnlocked) {
+    if (!requireHR(page, btn)) return;
+  }
+  doSwitchPage(page, btn);
+}
+
+function doSwitchPage(page,btn) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-tab').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('page-'+page).classList.add('active');
+  btn.classList.add('active');
+  if (page==='dashboard') renderDashboard();
+  if (page==='report') renderReport();
+  if (page==='leave') { renderLeaveTable(); renderLeaveMetrics(); }
+}
+
+// ============================================================
+// AI ASSISTANT
+// ============================================================
+var aiChatHistory = [];
+
+function addAIMessage(role, text) {
+  var chat = document.getElementById('ai-chat');
+  var div = document.createElement('div');
+  div.className = 'ai-msg ' + role;
+  // Basic markdown-like formatting
+  var html = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+  div.innerHTML = html;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showAITyping() {
+  var chat = document.getElementById('ai-chat');
+  var div = document.createElement('div');
+  div.className = 'ai-msg assistant ai-typing-indicator';
+  div.innerHTML = '<div class="ai-typing"><span></span><span></span><span></span></div>';
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function removeAITyping() {
+  var el = document.querySelector('.ai-typing-indicator');
+  if (el) el.remove();
+}
+
+async function askAI(question) {
+  if (!question) {
+    var input = document.getElementById('ai-input');
+    question = input.value.trim();
+    if (!question) return;
+    input.value = '';
+  } else {
+    document.getElementById('ai-input').value = '';
+  }
+
+  // Hide suggestions after first use
+  document.getElementById('ai-suggestions').style.display = 'none';
+
+  addAIMessage('user', question);
+
+  if (ANTHROPIC_KEY === 'YOUR_KEY_HERE' || !ANTHROPIC_KEY) {
+    addAIMessage('assistant', '⚠️ **API key not configured.** Please add your Anthropic API key to the HTML file (find the line `const ANTHROPIC_KEY = \'YOUR_KEY_HERE\'` and replace it with your actual key). See Section 7.2 of the setup guide for instructions.');
+    return;
+  }
+
+  var sendBtn = document.getElementById('ai-send-btn');
+  sendBtn.disabled = true;
+  showAITyping();
+
+  try {
+    // Fetch fresh data from Google Sheets
+    var data = await fetchFromSheet();
+
+    // Build a data summary for the AI
+    var today = todayISO();
+    var thisWeekRows = data.filter(function(r){ return inWeek(r[0], 0); });
+    var lastWeekRows = data.filter(function(r){ return inWeek(r[0], -1); });
+
+    // Who submitted today
+    var submittedToday = [...new Set(data.filter(function(r){ return toISO(toDateObj(r[0])) === today; }).map(function(r){ return r[2]; }))];
+    var notSubmitted = ALL_EMPLOYEES.filter(function(e){ return submittedToday.indexOf(e) === -1; });
+
+    var dataContext = 'Today is ' + today + ' (' + dayName(today) + ').\n\n';
+    dataContext += 'EMPLOYEES (' + ALL_EMPLOYEES.length + ' total): ' + ALL_EMPLOYEES.join(', ') + '\n\n';
+    dataContext += 'SUBMITTED TODAY: ' + (submittedToday.length > 0 ? submittedToday.join(', ') : 'Nobody yet') + '\n';
+    dataContext += 'NOT SUBMITTED TODAY: ' + (notSubmitted.length > 0 ? notSubmitted.join(', ') : 'Everyone has submitted!') + '\n\n';
+
+    // Raw data rows (last 200 entries to stay within limits)
+    var recentData = data.slice(-200);
+    dataContext += 'WORK LOG DATA (columns: Date, Day, Employee, Team, DayType, Task, Description, Sprint, Hours):\n';
+    recentData.forEach(function(r) {
+      dataContext += r.join(' | ') + '\n';
+    });
+    dataContext += '\nTotal entries in database: ' + data.length;
+
+    // Build messages for API
+    var messages = [{
+      role: 'user',
+      content: 'You are the WorkLog AI Assistant for BSharp Corp. You help HR analyze employee work log data. Answer questions clearly and concisely. Use the data provided below. If a calculation is needed, do it. Format numbers nicely. Use bullet points for lists.\n\nDATA:\n' + dataContext + '\n\nQUESTION: ' + question
+    }];
+
+    var response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        messages: messages
+      })
+    });
+
+    removeAITyping();
+
+    if (!response.ok) {
+      var errData = await response.json().catch(function(){ return {}; });
+      var errMsg = (errData.error && errData.error.message) || 'API error (' + response.status + ')';
+      addAIMessage('assistant', '⚠️ **Error:** ' + errMsg + '\n\nPlease check your API key is valid and has credits.');
+      return;
+    }
+
+    var result = await response.json();
+    var answer = result.content.map(function(c){ return c.text || ''; }).join('');
+    addAIMessage('assistant', answer);
+
+  } catch(e) {
+    removeAITyping();
+    addAIMessage('assistant', '⚠️ **Error:** ' + e.message + '\n\nMake sure you have a valid Anthropic API key configured and an internet connection.');
+  } finally {
+    sendBtn.disabled = false;
+    document.getElementById('ai-input').focus();
+  }
+}
+
+function showToast(msg,isError) {
+  var t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast'+(isError?' error':'');
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); },3500);
+}
+
+window.addEventListener('load',function(){
+  document.getElementById('f-date').valueAsDate=new Date();
+  document.getElementById('lv-from').valueAsDate=new Date();
+  document.getElementById('lv-to').valueAsDate=new Date();
+  document.getElementById('today-label').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  addTask();
+  // Check for existing login
+  checkExistingLogin();
+});
+</script>
+</body>
+</html>
