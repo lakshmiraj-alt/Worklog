@@ -601,7 +601,7 @@ let dashAllRows = [];
 let dashWeekOffset = 0;
 let mySubsWeekOffset = 0;
 let currentUser = null; // { email, name, team, isAdmin }
-let expenseData = JSON.parse(localStorage.getItem('wl_expenses') || '[]');
+let expenseData = []; // loaded from Google Sheet
 
 // ============================================================
 // EMAIL LOGIN SYSTEM (with Admin detection)
@@ -1324,11 +1324,49 @@ async function renderMySubmissions() {
 }
 
 // ============================================================
-// EXPENSE TRACKER
+// EXPENSE TRACKER (Google Sheet based)
 // ============================================================
-function saveExpenses() { localStorage.setItem('wl_expenses', JSON.stringify(expenseData)); }
+function fetchExpenses() {
+  return new Promise(function(resolve, reject) {
+    var cb = 'exp_' + Date.now();
+    var script = document.createElement('script');
+    var done = false;
+    var timer = setTimeout(function() {
+      if (done) return; done = true; cleanup();
+      // Fallback to cached
+      var c = localStorage.getItem('wl_exp_cache');
+      if (c) { try { resolve(JSON.parse(c)); return; } catch(e){} }
+      resolve([]);
+    }, 12000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e){}
+      try { if (script.parentNode) script.parentNode.removeChild(script); } catch(e){}
+    }
+    window[cb] = function(data) {
+      if (done) return; done = true; cleanup();
+      if (data && data.status === 'ok') {
+        var rows = data.data || [];
+        // Convert rows to objects
+        var expenses = rows.map(function(r) {
+          return { id: r[0], date: r[1], employee: r[2], team: r[3], email: r[4], category: r[5], amount: parseFloat(r[6])||0, reason: r[7], status: r[8] || 'Pending' };
+        });
+        try { localStorage.setItem('wl_exp_cache', JSON.stringify(expenses)); } catch(e){}
+        resolve(expenses);
+      } else { resolve([]); }
+    };
+    script.src = SCRIPT_URL + '?sheet=Expenses&callback=' + cb + '&t=' + Date.now();
+    script.onerror = function() {
+      if (done) return; done = true; cleanup();
+      var c = localStorage.getItem('wl_exp_cache');
+      if (c) { try { resolve(JSON.parse(c)); return; } catch(e){} }
+      resolve([]);
+    };
+    document.head.appendChild(script);
+  });
+}
 
-function submitExpense() {
+async function submitExpense() {
   if (!currentUser) return;
   var date = document.getElementById('exp-date').value;
   var amount = parseFloat(document.getElementById('exp-amount').value);
@@ -1337,43 +1375,51 @@ function submitExpense() {
   if (!date) { showToast('Please select expense date',true); return; }
   if (!amount || amount <= 0) { showToast('Please enter a valid amount',true); return; }
   if (!reason) { showToast('Please enter a reason',true); return; }
-  expenseData.push({
-    id: Date.now(),
-    date: date,
-    employee: currentUser.name,
-    team: currentUser.team,
-    email: currentUser.email,
-    category: category,
-    amount: amount,
-    reason: reason,
-    status: 'Pending',
-    submittedAt: new Date().toISOString()
-  });
-  saveExpenses();
-  showToast('✓ Expense claim of ₹'+amount+' submitted');
-  document.getElementById('exp-date').value = '';
-  document.getElementById('exp-amount').value = '';
-  document.getElementById('exp-reason').value = '';
-  renderMyExpenses();
+
+  var id = Date.now();
+  var row = [id, date, currentUser.name, currentUser.team, currentUser.email, category, amount, reason, 'Pending'];
+
+  var btn = document.getElementById('exp-submit-btn');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: {'Content-Type':'text/plain'},
+      body: JSON.stringify({ action: 'appendExpense', rows: [row] })
+    });
+    showToast('✓ Expense claim of ₹'+amount+' submitted');
+    document.getElementById('exp-date').valueAsDate = new Date();
+    document.getElementById('exp-amount').value = '';
+    document.getElementById('exp-reason').value = '';
+    // Refresh list after short delay for sheet to update
+    setTimeout(function(){ renderMyExpenses(); }, 1500);
+  } catch(e) { showToast('Error submitting expense',true); }
+  finally { btn.disabled = false; btn.textContent = 'Submit claim →'; }
 }
 
-function renderMyExpenses() {
+async function renderMyExpenses() {
   if (!currentUser) return;
-  var my = expenseData.filter(function(e){ return e.email === currentUser.email; }).sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
   var tbody = document.getElementById('exp-my-tbody');
   var empty = document.getElementById('exp-my-empty');
-  var statusClass = {'Pending':'status-pending','Approved':'status-approved','Paid':'status-paid','Rejected':'status-rejected'};
-  if (my.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-  tbody.innerHTML = my.map(function(e) {
-    return '<tr>'+
-      '<td class="muted">'+fmtDate(e.date)+'</td>'+
-      '<td>'+e.category+'</td>'+
-      '<td style="font-weight:600">₹'+e.amount.toLocaleString('en-IN')+'</td>'+
-      '<td class="muted" style="max-width:200px">'+e.reason+'</td>'+
-      '<td><span class="badge '+(statusClass[e.status]||'badge-other')+'">'+e.status+'</span></td>'+
-    '</tr>';
-  }).join('');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="5"><span class="spinner"></span>Loading...</td></tr>';
+  try {
+    expenseData = await fetchExpenses();
+    var my = expenseData.filter(function(e){ return e.email === currentUser.email; }).sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+    var statusClass = {'Pending':'status-pending','Approved':'status-approved','Paid':'status-paid','Rejected':'status-rejected'};
+    if (my.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    tbody.innerHTML = my.map(function(e) {
+      return '<tr>'+
+        '<td class="muted">'+fmtDate(e.date)+'</td>'+
+        '<td>'+e.category+'</td>'+
+        '<td style="font-weight:600">₹'+e.amount.toLocaleString('en-IN')+'</td>'+
+        '<td class="muted" style="max-width:200px">'+e.reason+'</td>'+
+        '<td><span class="badge '+(statusClass[e.status]||'badge-other')+'">'+e.status+'</span></td>'+
+      '</tr>';
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="5" style="color:var(--red)">Could not load expenses</td></tr>';
+  }
 }
 
 // ============================================================
@@ -1387,7 +1433,15 @@ function populateExpenseFilters() {
     Array.from(empSet).sort().map(function(n){ return '<option>'+n+'</option>'; }).join('');
 }
 
-function renderExpenseAdmin() {
+async function renderExpenseAdmin() {
+  var tbody = document.getElementById('exp-admin-tbody');
+  var empty = document.getElementById('exp-admin-empty');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="8"><span class="spinner"></span>Loading...</td></tr>';
+  try {
+    expenseData = await fetchExpenses();
+    populateExpenseFilters();
+  } catch(e) {}
+
   var statusF = (document.getElementById('exp-filter-status')||{}).value || '';
   var empF = (document.getElementById('exp-filter-emp')||{}).value || '';
   var filtered = expenseData.filter(function(e) {
@@ -1396,7 +1450,6 @@ function renderExpenseAdmin() {
     return true;
   }).sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
 
-  // Metrics
   var pending = expenseData.filter(function(e){ return e.status === 'Pending'; });
   var approved = expenseData.filter(function(e){ return e.status === 'Approved' || e.status === 'Paid'; });
   var totalAmt = expenseData.reduce(function(s,e){ return s+e.amount; },0);
@@ -1405,8 +1458,6 @@ function renderExpenseAdmin() {
     '<div class="metric-card success"><div class="metric-label">Approved / Paid</div><div class="metric-value">'+approved.length+'</div><div class="metric-sub">claims processed</div></div>'+
     '<div class="metric-card"><div class="metric-label">Total amount</div><div class="metric-value">₹'+totalAmt.toLocaleString('en-IN')+'</div><div class="metric-sub">all claims</div></div>';
 
-  var tbody = document.getElementById('exp-admin-tbody');
-  var empty = document.getElementById('exp-admin-empty');
   var statusClass = {'Pending':'status-pending','Approved':'status-approved','Paid':'status-paid','Rejected':'status-rejected'};
   var tClass = {'Technical':'badge-tech','Customer Success':'badge-cs','Marketing':'badge-mkt'};
   var tShort = {'Technical':'Tech','Customer Success':'CS','Marketing':'Mktg','Director':'Dir','Admin':'Admin'};
@@ -1436,16 +1487,16 @@ function renderExpenseAdmin() {
   }).join('');
 }
 
-function updateExpenseStatus(id, newStatus) {
-  for (var i = 0; i < expenseData.length; i++) {
-    if (expenseData[i].id === id) {
-      expenseData[i].status = newStatus;
-      break;
-    }
-  }
-  saveExpenses();
-  renderExpenseAdmin();
-  showToast('✓ Expense marked as ' + newStatus);
+async function updateExpenseStatus(id, newStatus) {
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: {'Content-Type':'text/plain'},
+      body: JSON.stringify({ action: 'updateExpenseStatus', id: id, status: newStatus })
+    });
+    showToast('✓ Expense marked as ' + newStatus);
+    setTimeout(function(){ renderExpenseAdmin(); }, 1500);
+  } catch(e) { showToast('Error updating status',true); }
 }
 
 function exportExpenseCSV() {
