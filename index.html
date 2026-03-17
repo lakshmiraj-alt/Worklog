@@ -1347,9 +1347,27 @@ function fetchExpenses() {
       if (done) return; done = true; cleanup();
       if (data && data.status === 'ok') {
         var rows = data.data || [];
-        // Convert rows to objects
+        // Convert rows to objects — handle Sheets date/number formats
         var expenses = rows.map(function(r) {
-          return { id: r[0], date: r[1], employee: r[2], team: r[3], email: r[4], category: r[5], amount: parseFloat(r[6])||0, reason: r[7], status: r[8] || 'Pending' };
+          // r could be array of mixed types from Sheets
+          var id = String(r[0] || '');
+          var dateVal = r[1] || '';
+          // Sheets may return date as string "Mon Mar 18 2026..." or "2026-03-18"
+          if (dateVal && typeof dateVal === 'string' && dateVal.length > 10) {
+            var d = new Date(dateVal);
+            if (!isNaN(d.getTime())) dateVal = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+          }
+          return {
+            id: id,
+            date: String(dateVal),
+            employee: String(r[2] || ''),
+            team: String(r[3] || ''),
+            email: String(r[4] || ''),
+            category: String(r[5] || ''),
+            amount: parseFloat(r[6]) || 0,
+            reason: String(r[7] || ''),
+            status: String(r[8] || 'Pending')
+          };
         });
         try { localStorage.setItem('wl_exp_cache', JSON.stringify(expenses)); } catch(e){}
         resolve(expenses);
@@ -1492,7 +1510,7 @@ async function updateExpenseStatus(id, newStatus) {
     await fetch(SCRIPT_URL, {
       method: 'POST', mode: 'no-cors',
       headers: {'Content-Type':'text/plain'},
-      body: JSON.stringify({ action: 'updateExpenseStatus', id: id, status: newStatus })
+      body: JSON.stringify({ action: 'updateExpenseStatus', id: String(id), status: newStatus })
     });
     showToast('✓ Expense marked as ' + newStatus);
     setTimeout(function(){ renderExpenseAdmin(); }, 1500);
