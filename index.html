@@ -109,6 +109,19 @@ tbody td.muted{color:var(--text2)}
 .leave-annual{background:#E8F0FA;color:var(--tech)}
 .leave-personal{background:#F3E8FA;color:#6B3A8C}
 .leave-other{background:var(--surface2);color:var(--text2)}
+/* Expense status badges */
+.status-pending{background:#FEF3E2;color:#A05000}
+.status-approved{background:var(--cs-bg);color:var(--cs)}
+.status-paid{background:var(--tech-bg);color:var(--tech)}
+.status-rejected{background:var(--red-bg);color:var(--red)}
+.action-btn{padding:4px 10px;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);transition:all .15s;margin:0 2px}
+.action-btn:hover{background:var(--surface2)}
+.action-btn.approve{color:var(--cs);border-color:var(--cs)}.action-btn.approve:hover{background:var(--cs-bg)}
+.action-btn.paid{color:var(--tech);border-color:var(--tech)}.action-btn.paid:hover{background:var(--tech-bg)}
+.action-btn.reject{color:var(--red);border-color:var(--red)}.action-btn.reject:hover{background:var(--red-bg)}
+.role-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;margin-left:6px}
+.role-admin{background:var(--accent-light);color:var(--accent)}
+.role-employee{background:var(--surface2);color:var(--text3)}
 /* Login overlay */
 .login-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center}
 .login-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2.5rem;max-width:400px;width:90%;box-shadow:var(--shadow);text-align:center}
@@ -121,17 +134,6 @@ tbody td.muted{color:var(--text2)}
 .login-box .login-btn:disabled{opacity:.6;cursor:not-allowed}
 .login-error{color:var(--red);font-size:12.5px;margin-top:8px;min-height:18px}
 .login-info{font-size:11.5px;color:var(--text3);margin-top:16px}
-.otp-step{display:none}
-.otp-step.active{display:block}
-.otp-input-group{display:flex;gap:8px;justify-content:center;margin:16px 0 12px}
-.otp-input-group input{width:44px;height:52px;text-align:center;font-size:22px;font-weight:600;font-family:'DM Sans',sans-serif;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s}
-.otp-input-group input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(196,82,26,.12);background:#fff}
-.otp-resend{font-size:12px;color:var(--text3);margin-top:8px}
-.otp-resend button{background:none;border:none;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;text-decoration:underline}
-.otp-resend button:disabled{color:var(--text3);cursor:not-allowed;text-decoration:none}
-.otp-email-display{background:var(--surface2);padding:6px 12px;border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:500;display:inline-block;margin-bottom:12px}
-.otp-back{background:none;border:none;color:var(--text3);cursor:pointer;font-size:12.5px;font-family:'DM Sans',sans-serif;margin-top:12px}
-.otp-back:hover{color:var(--text2)}
 .user-badge{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;padding:4px 10px;border-radius:var(--radius);transition:background .15s;border:none;background:none;font-family:'DM Sans',sans-serif}
 .user-badge:hover{background:var(--surface2)}
 .user-badge .user-avatar{width:24px;height:24px;background:var(--accent-light);color:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
@@ -156,11 +158,7 @@ tbody td.muted{color:var(--text2)}
 .ai-suggestions{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .ai-suggest-btn{padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:99px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s}
 .ai-suggest-btn:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
-/* HR PIN modal */
-.pin-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:150;display:flex;align-items:center;justify-content:center;display:none}
-.pin-box{background:var(--surface);border-radius:var(--radius-lg);padding:2rem;max-width:340px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.15);text-align:center}
-.pin-box input{width:100%;padding:11px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:14px;text-align:center;letter-spacing:4px;outline:none;margin:12px 0}
-.pin-box input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(196,82,26,.12)}
+.role-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;margin-left:6px}
 @media(max-width:600px){
   .field-grid{grid-template-columns:1fr}
   .metric-grid,.metric-grid-4{grid-template-columns:1fr 1fr}
@@ -189,26 +187,10 @@ tbody td.muted{color:var(--text2)}
   </div>
 </div>
 
-<!-- HR PIN MODAL -->
-<div class="pin-overlay" id="pin-overlay">
-  <div class="pin-box">
-    <div style="font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:4px">HR Access Required</div>
-    <div style="color:var(--text2);font-size:13px">Enter the HR PIN to access this section</div>
-    <input type="password" id="pin-input" maxlength="6" placeholder="••••" onkeydown="if(event.key==='Enter')checkPin()"/>
-    <button class="login-btn" onclick="checkPin()" style="margin-bottom:6px">Unlock</button>
-    <button onclick="closePinOverlay()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif">Cancel</button>
-    <div class="login-error" id="pin-error"></div>
-  </div>
-</div>
-
 <nav>
   <div class="logo"><div class="logo-dot"></div>WorkLog</div>
   <div class="nav-tabs" id="nav-tabs">
-    <button class="nav-tab active" onclick="switchPage('submit',this)">Submit Log</button>
-    <button class="nav-tab nav-hr" onclick="switchPage('dashboard',this)">Dashboard</button>
-    <button class="nav-tab nav-hr" onclick="switchPage('report',this)">Weekly Report</button>
-    <button class="nav-tab nav-hr" onclick="switchPage('leave',this)">Leave Tracker</button>
-    <button class="nav-tab nav-hr" onclick="switchPage('ai',this)">AI Assistant</button>
+    <!-- Tabs populated dynamically based on role -->
   </div>
   <div class="nav-right" style="display:flex;align-items:center;gap:10px">
     <span id="today-label"></span>
@@ -451,6 +433,103 @@ tbody td.muted{color:var(--text2)}
   </div>
 </div>
 
+<!-- ===== MY SUBMISSIONS (Employee) ===== -->
+<div class="page" id="page-mysubs">
+  <div class="report-header">
+    <div class="report-title">My Submissions</div>
+    <div class="week-nav">
+      <button onclick="changeMySubsWeek(-1)">‹</button>
+      <span id="mysubs-week-label"></span>
+      <button onclick="changeMySubsWeek(1)">›</button>
+    </div>
+  </div>
+  <div class="metric-grid" id="mysubs-metrics">
+    <div class="metric-card"><div class="metric-label">Total hours</div><div class="metric-value">—</div></div>
+    <div class="metric-card"><div class="metric-label">Tasks logged</div><div class="metric-value">—</div></div>
+    <div class="metric-card"><div class="metric-label">Days submitted</div><div class="metric-value">—</div></div>
+  </div>
+  <div class="card">
+    <div class="section-divider">My log entries</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Task</th><th>Description</th><th>Sprint</th><th style="text-align:right">Hours</th></tr></thead>
+        <tbody id="mysubs-tbody"><tr class="loading-row"><td colspan="5"><span class="spinner"></span>Loading...</td></tr></tbody>
+      </table>
+      <div class="empty-state" id="mysubs-empty" style="display:none">No submissions found for this week.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EXPENSE TRACKER (Employee Submit) ===== -->
+<div class="page" id="page-expenses">
+  <div style="margin-bottom:1.5rem">
+    <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">Expense Claims</div>
+    <div style="color:var(--text2);font-size:13.5px">Submit and track your expense reimbursement claims.</div>
+  </div>
+  <div class="card">
+    <div class="card-title"><div class="card-title-icon">💰</div> New expense claim</div>
+    <div class="field-grid">
+      <div class="field"><label>Date of expense</label><input type="date" id="exp-date"/></div>
+      <div class="field"><label>Amount (₹)</label><input type="number" id="exp-amount" placeholder="e.g. 1500" min="1" step="0.01"/></div>
+      <div class="field"><label>Category</label>
+        <select id="exp-category">
+          <option>Travel</option><option>Food & Meals</option><option>Office Supplies</option>
+          <option>Software / Tools</option><option>Client Entertainment</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field"><label>Reason / Description</label><input type="text" id="exp-reason" placeholder="e.g. Cab to client office"/></div>
+    </div>
+    <button class="submit-btn" id="exp-submit-btn" onclick="submitExpense()" style="margin-top:8px">Submit claim →</button>
+  </div>
+  <div class="card">
+    <div class="section-divider">My claims</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Reason</th><th>Status</th></tr></thead>
+        <tbody id="exp-my-tbody"></tbody>
+      </table>
+      <div class="empty-state" id="exp-my-empty" style="display:none">No expense claims submitted yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EXPENSE MANAGER (Admin) ===== -->
+<div class="page" id="page-expmanage">
+  <div class="report-header">
+    <div class="report-title">Expense Manager</div>
+    <button class="export-btn" onclick="exportExpenseCSV()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M4 7l4 4 4-4M2 12v2h12v-2"/></svg>
+      Export CSV
+    </button>
+  </div>
+  <div class="metric-grid" id="exp-admin-metrics">
+    <div class="metric-card"><div class="metric-label">Pending</div><div class="metric-value">—</div></div>
+    <div class="metric-card"><div class="metric-label">Approved</div><div class="metric-value">—</div></div>
+    <div class="metric-card"><div class="metric-label">Total amount</div><div class="metric-value">—</div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+      <div class="section-divider" style="margin-bottom:0">All expense claims</div>
+      <div class="filters">
+        <select id="exp-filter-status" onchange="renderExpenseAdmin()">
+          <option value="">All statuses</option>
+          <option>Pending</option><option>Approved</option><option>Paid</option><option>Rejected</option>
+        </select>
+        <select id="exp-filter-emp" onchange="renderExpenseAdmin()">
+          <option value="">All employees</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Employee</th><th>Team</th><th>Category</th><th>Amount</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="exp-admin-tbody"></tbody>
+      </table>
+      <div class="empty-state" id="exp-admin-empty" style="display:none">No expense claims found.</div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== AI ASSISTANT ===== -->
 <div class="page" id="page-ai">
   <div class="ai-container">
@@ -512,27 +591,27 @@ const EMPLOYEE_MAP = {
   'vishwanatha@bsharpcorp.com': { name:'Vishwantha', team:'Technical' }
 };
 
-// HR PIN for dashboard/report access (change this to your desired PIN)
-const HR_PIN = '1234';
+// Admin email addresses — these users get full access
+const ADMIN_EMAILS = ['gopal@bsharpcorp.com', 'lakshmi.raj@bsharpcorp.com'];
 
 // Anthropic API key
 const ANTHROPIC_KEY = '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';
 
 let dashAllRows = [];
 let dashWeekOffset = 0;
-let currentUser = null; // { email, name, team }
-let hrUnlocked = false;
-let pendingHRPage = null;
+let mySubsWeekOffset = 0;
+let currentUser = null; // { email, name, team, isAdmin }
+let expenseData = JSON.parse(localStorage.getItem('wl_expenses') || '[]');
 
 // ============================================================
-// EMAIL LOGIN SYSTEM
+// EMAIL LOGIN SYSTEM (with Admin detection)
 // ============================================================
 
 function checkExistingLogin() {
   try {
     var saved = JSON.parse(localStorage.getItem('wl_login') || 'null');
     if (saved && saved.email && saved.expires && Date.now() < saved.expires) {
-      currentUser = { email: saved.email, name: saved.name, team: saved.team };
+      currentUser = { email: saved.email, name: saved.name, team: saved.team, isAdmin: ADMIN_EMAILS.indexOf(saved.email) !== -1 };
       applyLogin();
       return;
     }
@@ -556,7 +635,7 @@ function doLogin() {
     return;
   }
 
-  currentUser = { email: email, name: emp.name, team: emp.team };
+  currentUser = { email: email, name: emp.name, team: emp.team, isAdmin: ADMIN_EMAILS.indexOf(email) !== -1 };
   localStorage.setItem('wl_login', JSON.stringify({
     email: email, name: emp.name, team: emp.team,
     expires: Date.now() + (7 * 24 * 60 * 60 * 1000)
@@ -567,55 +646,52 @@ function doLogin() {
 
 function applyLogin() {
   document.getElementById('login-overlay').style.display = 'none';
+  // Show user badge with role
   var badge = document.getElementById('user-badge');
   badge.style.display = 'flex';
   document.getElementById('user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
-  document.getElementById('user-display-name').textContent = currentUser.name.split(' ')[0];
+  document.getElementById('user-display-name').innerHTML = currentUser.name.split(' ')[0] +
+    '<span class="role-badge ' + (currentUser.isAdmin ? 'role-admin' : 'role-employee') + '">' +
+    (currentUser.isAdmin ? 'Admin' : 'Employee') + '</span>';
+  // Auto-fill submit form
   var nameSelect = document.getElementById('f-name');
   for (var i = 0; i < nameSelect.options.length; i++) {
     if (nameSelect.options[i].text === currentUser.name) {
       nameSelect.selectedIndex = i; autoFillTeam(); break;
     }
   }
+  // Build nav tabs based on role
+  buildNavTabs();
+  // Populate expense filter dropdown for admin
+  if (currentUser.isAdmin) populateExpenseFilters();
+}
+
+function buildNavTabs() {
+  var nav = document.getElementById('nav-tabs');
+  var tabs = [];
+  // Employee tabs
+  tabs.push({ id: 'submit', label: 'Submit Log' });
+  tabs.push({ id: 'mysubs', label: 'My Submissions' });
+  tabs.push({ id: 'expenses', label: 'Expenses' });
+  // Admin-only tabs
+  if (currentUser.isAdmin) {
+    tabs.push({ id: 'dashboard', label: 'Dashboard' });
+    tabs.push({ id: 'report', label: 'Weekly Report' });
+    tabs.push({ id: 'leave', label: 'Leave Tracker' });
+    tabs.push({ id: 'expmanage', label: 'Expense Manager' });
+    tabs.push({ id: 'ai', label: 'AI Assistant' });
+  }
+  nav.innerHTML = tabs.map(function(t, idx) {
+    return '<button class="nav-tab' + (idx === 0 ? ' active' : '') + '" onclick="switchPage(\'' + t.id + '\',this)">' + t.label + '</button>';
+  }).join('');
 }
 
 function handleLogout() {
   if (confirm('Sign out of WorkLog?')) {
     localStorage.removeItem('wl_login');
-    hrUnlocked = false;
     currentUser = null;
     location.reload();
   }
-}
-
-// HR PIN check for restricted tabs
-function requireHR(page, btn) {
-  if (hrUnlocked) return true;
-  pendingHRPage = { page: page, btn: btn };
-  document.getElementById('pin-overlay').style.display = 'flex';
-  document.getElementById('pin-input').value = '';
-  document.getElementById('pin-error').textContent = '';
-  setTimeout(function(){ document.getElementById('pin-input').focus(); }, 100);
-  return false;
-}
-
-function checkPin() {
-  var pin = document.getElementById('pin-input').value;
-  if (pin === HR_PIN) {
-    hrUnlocked = true;
-    document.getElementById('pin-overlay').style.display = 'none';
-    if (pendingHRPage) {
-      doSwitchPage(pendingHRPage.page, pendingHRPage.btn);
-      pendingHRPage = null;
-    }
-  } else {
-    document.getElementById('pin-error').textContent = 'Incorrect PIN. Try again.';
-  }
-}
-
-function closePinOverlay() {
-  document.getElementById('pin-overlay').style.display = 'none';
-  pendingHRPage = null;
 }
 
 // ============================================================
@@ -1058,10 +1134,11 @@ function exportCSV() {
 // NAV & UTILS
 // ============================================================
 function switchPage(page,btn) {
-  // HR-restricted pages need PIN
-  var hrPages = ['dashboard','report','leave','ai'];
-  if (hrPages.indexOf(page) !== -1 && !hrUnlocked) {
-    if (!requireHR(page, btn)) return;
+  // Admin-only pages — block if not admin
+  var adminPages = ['dashboard','report','leave','expmanage','ai'];
+  if (adminPages.indexOf(page) !== -1 && (!currentUser || !currentUser.isAdmin)) {
+    showToast('Admin access required',true);
+    return;
   }
   doSwitchPage(page, btn);
 }
@@ -1074,6 +1151,9 @@ function doSwitchPage(page,btn) {
   if (page==='dashboard') renderDashboard();
   if (page==='report') renderReport();
   if (page==='leave') { renderLeaveTable(); renderLeaveMetrics(); }
+  if (page==='mysubs') renderMySubmissions();
+  if (page==='expenses') renderMyExpenses();
+  if (page==='expmanage') renderExpenseAdmin();
 }
 
 // ============================================================
@@ -1203,6 +1283,184 @@ async function askAI(question) {
   }
 }
 
+// ============================================================
+// MY SUBMISSIONS (Employee view of own entries)
+// ============================================================
+function changeMySubsWeek(dir) { mySubsWeekOffset += dir; renderMySubmissions(); }
+
+async function renderMySubmissions() {
+  if (!currentUser) return;
+  var r = getWeekRange(mySubsWeekOffset);
+  var label = r.start.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' – ' + r.end.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('mysubs-week-label').textContent = label;
+  document.getElementById('mysubs-tbody').innerHTML = '<tr class="loading-row"><td colspan="5"><span class="spinner"></span>Loading...</td></tr>';
+  try {
+    var all = await fetchFromSheet();
+    var myRows = all.filter(function(r) {
+      return r[2] === currentUser.name && inWeek(r[0], mySubsWeekOffset);
+    });
+    var totalHrs = myRows.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+    var uniqueDays = new Set(myRows.map(function(r){ return toISO(toDateObj(r[0])); })).size;
+    document.getElementById('mysubs-metrics').innerHTML =
+      '<div class="metric-card"><div class="metric-label">Total hours</div><div class="metric-value">'+totalHrs+'h</div><div class="metric-sub">this week</div></div>'+
+      '<div class="metric-card"><div class="metric-label">Tasks logged</div><div class="metric-value">'+myRows.length+'</div><div class="metric-sub">entries</div></div>'+
+      '<div class="metric-card"><div class="metric-label">Days submitted</div><div class="metric-value">'+uniqueDays+'</div><div class="metric-sub">of 5 weekdays</div></div>';
+    var tbody = document.getElementById('mysubs-tbody');
+    var empty = document.getElementById('mysubs-empty');
+    if (myRows.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    tbody.innerHTML = myRows.map(function(r) {
+      return '<tr>'+
+        '<td class="muted">'+fmtDate(r[0])+'<br><span style="font-size:11px;color:var(--text3)">'+(r[1]||dayName(r[0]))+'</span></td>'+
+        '<td style="font-weight:500">'+r[5]+'</td>'+
+        '<td class="muted">'+r[6]+'</td>'+
+        '<td class="muted">'+r[7]+'</td>'+
+        '<td style="text-align:right;font-weight:600;color:var(--accent)">'+r[8]+'h</td>'+
+      '</tr>';
+    }).join('');
+  } catch(e) {
+    document.getElementById('mysubs-tbody').innerHTML = '<tr class="loading-row"><td colspan="5" style="color:var(--red)">'+e.message+'</td></tr>';
+  }
+}
+
+// ============================================================
+// EXPENSE TRACKER
+// ============================================================
+function saveExpenses() { localStorage.setItem('wl_expenses', JSON.stringify(expenseData)); }
+
+function submitExpense() {
+  if (!currentUser) return;
+  var date = document.getElementById('exp-date').value;
+  var amount = parseFloat(document.getElementById('exp-amount').value);
+  var category = document.getElementById('exp-category').value;
+  var reason = document.getElementById('exp-reason').value.trim();
+  if (!date) { showToast('Please select expense date',true); return; }
+  if (!amount || amount <= 0) { showToast('Please enter a valid amount',true); return; }
+  if (!reason) { showToast('Please enter a reason',true); return; }
+  expenseData.push({
+    id: Date.now(),
+    date: date,
+    employee: currentUser.name,
+    team: currentUser.team,
+    email: currentUser.email,
+    category: category,
+    amount: amount,
+    reason: reason,
+    status: 'Pending',
+    submittedAt: new Date().toISOString()
+  });
+  saveExpenses();
+  showToast('✓ Expense claim of ₹'+amount+' submitted');
+  document.getElementById('exp-date').value = '';
+  document.getElementById('exp-amount').value = '';
+  document.getElementById('exp-reason').value = '';
+  renderMyExpenses();
+}
+
+function renderMyExpenses() {
+  if (!currentUser) return;
+  var my = expenseData.filter(function(e){ return e.email === currentUser.email; }).sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+  var tbody = document.getElementById('exp-my-tbody');
+  var empty = document.getElementById('exp-my-empty');
+  var statusClass = {'Pending':'status-pending','Approved':'status-approved','Paid':'status-paid','Rejected':'status-rejected'};
+  if (my.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = my.map(function(e) {
+    return '<tr>'+
+      '<td class="muted">'+fmtDate(e.date)+'</td>'+
+      '<td>'+e.category+'</td>'+
+      '<td style="font-weight:600">₹'+e.amount.toLocaleString('en-IN')+'</td>'+
+      '<td class="muted" style="max-width:200px">'+e.reason+'</td>'+
+      '<td><span class="badge '+(statusClass[e.status]||'badge-other')+'">'+e.status+'</span></td>'+
+    '</tr>';
+  }).join('');
+}
+
+// ============================================================
+// EXPENSE MANAGER (Admin)
+// ============================================================
+function populateExpenseFilters() {
+  var empSet = new Set(expenseData.map(function(e){ return e.employee; }));
+  var sel = document.getElementById('exp-filter-emp');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">All employees</option>' +
+    Array.from(empSet).sort().map(function(n){ return '<option>'+n+'</option>'; }).join('');
+}
+
+function renderExpenseAdmin() {
+  var statusF = (document.getElementById('exp-filter-status')||{}).value || '';
+  var empF = (document.getElementById('exp-filter-emp')||{}).value || '';
+  var filtered = expenseData.filter(function(e) {
+    if (statusF && e.status !== statusF) return false;
+    if (empF && e.employee !== empF) return false;
+    return true;
+  }).sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+
+  // Metrics
+  var pending = expenseData.filter(function(e){ return e.status === 'Pending'; });
+  var approved = expenseData.filter(function(e){ return e.status === 'Approved' || e.status === 'Paid'; });
+  var totalAmt = expenseData.reduce(function(s,e){ return s+e.amount; },0);
+  document.getElementById('exp-admin-metrics').innerHTML =
+    '<div class="metric-card danger"><div class="metric-label">Pending</div><div class="metric-value">'+pending.length+'</div><div class="metric-sub">claims to review</div></div>'+
+    '<div class="metric-card success"><div class="metric-label">Approved / Paid</div><div class="metric-value">'+approved.length+'</div><div class="metric-sub">claims processed</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Total amount</div><div class="metric-value">₹'+totalAmt.toLocaleString('en-IN')+'</div><div class="metric-sub">all claims</div></div>';
+
+  var tbody = document.getElementById('exp-admin-tbody');
+  var empty = document.getElementById('exp-admin-empty');
+  var statusClass = {'Pending':'status-pending','Approved':'status-approved','Paid':'status-paid','Rejected':'status-rejected'};
+  var tClass = {'Technical':'badge-tech','Customer Success':'badge-cs','Marketing':'badge-mkt'};
+  var tShort = {'Technical':'Tech','Customer Success':'CS','Marketing':'Mktg','Director':'Dir','Admin':'Admin'};
+  if (filtered.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = filtered.map(function(e) {
+    var actions = '';
+    if (e.status === 'Pending') {
+      actions = '<button class="action-btn approve" onclick="updateExpenseStatus('+e.id+',\'Approved\')">Approve</button>'+
+                '<button class="action-btn reject" onclick="updateExpenseStatus('+e.id+',\'Rejected\')">Reject</button>';
+    } else if (e.status === 'Approved') {
+      actions = '<button class="action-btn paid" onclick="updateExpenseStatus('+e.id+',\'Paid\')">Mark Paid</button>'+
+                '<button class="action-btn reject" onclick="updateExpenseStatus('+e.id+',\'Rejected\')">Reject</button>';
+    } else {
+      actions = '<span style="color:var(--text3);font-size:11px">—</span>';
+    }
+    return '<tr>'+
+      '<td class="muted">'+fmtDate(e.date)+'</td>'+
+      '<td style="font-weight:500">'+e.employee+'</td>'+
+      '<td><span class="badge '+(tClass[e.team]||'badge-other')+'">'+(tShort[e.team]||e.team)+'</span></td>'+
+      '<td>'+e.category+'</td>'+
+      '<td style="font-weight:600">₹'+e.amount.toLocaleString('en-IN')+'</td>'+
+      '<td class="muted" style="max-width:160px">'+e.reason+'</td>'+
+      '<td><span class="badge '+(statusClass[e.status]||'badge-other')+'">'+e.status+'</span></td>'+
+      '<td>'+actions+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function updateExpenseStatus(id, newStatus) {
+  for (var i = 0; i < expenseData.length; i++) {
+    if (expenseData[i].id === id) {
+      expenseData[i].status = newStatus;
+      break;
+    }
+  }
+  saveExpenses();
+  renderExpenseAdmin();
+  showToast('✓ Expense marked as ' + newStatus);
+}
+
+function exportExpenseCSV() {
+  var rows = [['Date','Employee','Team','Category','Amount','Reason','Status']].concat(
+    expenseData.map(function(e){ return [e.date,e.employee,e.team,e.category,e.amount,e.reason,e.status]; })
+  );
+  var csv = rows.map(function(r){ return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob = new Blob([csv],{type:'text/csv'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href = url;
+  a.download = 'expenses_'+todayISO()+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('✓ Expense CSV exported');
+}
+
 function showToast(msg,isError) {
   var t=document.getElementById('toast');
   t.textContent=msg;
@@ -1213,11 +1471,11 @@ function showToast(msg,isError) {
 
 window.addEventListener('load',function(){
   document.getElementById('f-date').valueAsDate=new Date();
+  document.getElementById('exp-date').valueAsDate=new Date();
   document.getElementById('lv-from').valueAsDate=new Date();
   document.getElementById('lv-to').valueAsDate=new Date();
   document.getElementById('today-label').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
   addTask();
-  // Check for existing login
   checkExistingLogin();
 });
 </script>
