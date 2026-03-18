@@ -594,8 +594,8 @@ const EMPLOYEE_MAP = {
 // Admin email addresses — these users get full access
 const ADMIN_EMAILS = ['gopal@bsharpcorp.com', 'lakshmi.raj@bsharpcorp.com'];
 
-// Anthropic API key
-const ANTHROPIC_KEY = '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';
+// Google Gemini API key (free at aistudio.google.com)
+const GEMINI_KEY = 'AIzaSyB9ovrXmhEJXM1BqYOZE9qBIpIuAiktQGo';
 
 let dashAllRows = [];
 let dashWeekOffset = 0;
@@ -1205,8 +1205,8 @@ async function askAI(question) {
 
   addAIMessage('user', question);
 
-  if (ANTHROPIC_KEY === 'YOUR_KEY_HERE' || !ANTHROPIC_KEY) {
-    addAIMessage('assistant', '⚠️ **API key not configured.** Please add your Anthropic API key to the HTML file (find the line `const ANTHROPIC_KEY = \'YOUR_KEY_HERE\'` and replace it with your actual key). See Section 7.2 of the setup guide for instructions.');
+  if (!GEMINI_KEY || GEMINI_KEY === 'YOUR_GEMINI_KEY') {
+    addAIMessage('assistant', '⚠️ **API key not configured.** Please add your Google Gemini API key to the HTML file.');
     return;
   }
 
@@ -1218,10 +1218,12 @@ async function askAI(question) {
     // Fetch fresh data from Google Sheets
     var data = await fetchFromSheet();
 
+    // Also fetch expense data
+    var expenses = [];
+    try { expenses = await fetchExpenses(); } catch(ex){}
+
     // Build a data summary for the AI
     var today = todayISO();
-    var thisWeekRows = data.filter(function(r){ return inWeek(r[0], 0); });
-    var lastWeekRows = data.filter(function(r){ return inWeek(r[0], -1); });
 
     // Who submitted today
     var submittedToday = [...new Set(data.filter(function(r){ return toISO(toDateObj(r[0])) === today; }).map(function(r){ return r[2]; }))];
@@ -1238,26 +1240,25 @@ async function askAI(question) {
     recentData.forEach(function(r) {
       dataContext += r.join(' | ') + '\n';
     });
-    dataContext += '\nTotal entries in database: ' + data.length;
+    dataContext += '\nTotal work log entries: ' + data.length;
 
-    // Build messages for API
-    var messages = [{
-      role: 'user',
-      content: 'You are the WorkLog AI Assistant for BSharp Corp. You help HR analyze employee work log data. Answer questions clearly and concisely. Use the data provided below. If a calculation is needed, do it. Format numbers nicely. Use bullet points for lists.\n\nDATA:\n' + dataContext + '\n\nQUESTION: ' + question
-    }];
+    // Add expense data
+    if (expenses.length > 0) {
+      dataContext += '\n\nEXPENSE CLAIMS (columns: Date, Employee, Team, Category, Amount, Reason, Status):\n';
+      expenses.forEach(function(e) {
+        dataContext += e.date + ' | ' + e.employee + ' | ' + e.team + ' | ' + e.category + ' | ₹' + e.amount + ' | ' + e.reason + ' | ' + e.status + '\n';
+      });
+      dataContext += 'Total expense claims: ' + expenses.length;
+    }
 
-    var response = await fetch('https://api.anthropic.com/v1/messages', {
+    var prompt = 'You are the WorkLog AI Assistant for BSharp Corp. You help HR analyze employee work log data and expense claims. Answer questions clearly and concisely. Use the data provided below. If a calculation is needed, do it. Format numbers nicely. Use bullet points for lists.\n\nDATA:\n' + dataContext + '\n\nQUESTION: ' + question;
+
+    var response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        messages: messages
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 1024 }
       })
     });
 
@@ -1266,17 +1267,21 @@ async function askAI(question) {
     if (!response.ok) {
       var errData = await response.json().catch(function(){ return {}; });
       var errMsg = (errData.error && errData.error.message) || 'API error (' + response.status + ')';
-      addAIMessage('assistant', '⚠️ **Error:** ' + errMsg + '\n\nPlease check your API key is valid and has credits.');
+      addAIMessage('assistant', '⚠️ **Error:** ' + errMsg);
       return;
     }
 
     var result = await response.json();
-    var answer = result.content.map(function(c){ return c.text || ''; }).join('');
+    var answer = '';
+    if (result.candidates && result.candidates[0] && result.candidates[0].content) {
+      answer = result.candidates[0].content.parts.map(function(p){ return p.text || ''; }).join('');
+    }
+    if (!answer) answer = 'No response received. Please try again.';
     addAIMessage('assistant', answer);
 
   } catch(e) {
     removeAITyping();
-    addAIMessage('assistant', '⚠️ **Error:** ' + e.message + '\n\nMake sure you have a valid Anthropic API key configured and an internet connection.');
+    addAIMessage('assistant', '⚠️ **Error:** ' + e.message + '\n\nCheck your internet connection and try again.');
   } finally {
     sendBtn.disabled = false;
     document.getElementById('ai-input').focus();
