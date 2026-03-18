@@ -1253,7 +1253,7 @@ async function askAI(question) {
 
     var prompt = 'You are the WorkLog AI Assistant for BSharp Corp. You help HR analyze employee work log data and expense claims. Answer questions clearly and concisely. Use the data provided below. If a calculation is needed, do it. Format numbers nicely. Use bullet points for lists.\n\nDATA:\n' + dataContext + '\n\nQUESTION: ' + question;
 
-    var response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_KEY, {
+    var response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=' + GEMINI_KEY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
