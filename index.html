@@ -29,13 +29,17 @@ main{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(196,82,26,.12);background:#fff}
 .field textarea{resize:vertical;min-height:70px}
 .task-list{margin-bottom:12px}
-.task-row{display:grid;grid-template-columns:2fr 1.5fr 1fr 70px 32px;gap:8px;align-items:center;margin-bottom:8px;animation:slideIn .2s ease}
+.task-row{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);animation:slideIn .2s ease}
+.task-row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.task-top{display:grid;grid-template-columns:2fr 1fr 70px 32px;gap:8px;align-items:center;margin-bottom:6px}
 @keyframes slideIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-.task-row input{padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s}
-.task-row input:focus{border-color:var(--accent);background:#fff}
+.task-top input{padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s}
+.task-top input:focus{border-color:var(--accent);background:#fff}
+.task-desc{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s;resize:vertical;min-height:80px}
+.task-desc:focus{border-color:var(--accent);background:#fff}
 .remove-task{width:28px;height:28px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text3);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
 .remove-task:hover{background:var(--red-bg);border-color:var(--red);color:var(--red)}
-.task-row-header{display:grid;grid-template-columns:2fr 1.5fr 1fr 70px 32px;gap:8px;margin-bottom:6px}
+.task-row-header{display:grid;grid-template-columns:2fr 1fr 70px 32px;gap:8px;margin-bottom:6px}
 .task-row-header span{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);padding:0 2px}
 .add-task-btn{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:var(--accent);background:var(--accent-light);border:none;border-radius:8px;padding:6px 12px;cursor:pointer;transition:opacity .15s}
 .add-task-btn:hover{opacity:.8}
@@ -172,8 +176,10 @@ tbody td.muted{color:var(--text2)}
 @media(max-width:600px){
   .field-grid{grid-template-columns:1fr}
   .metric-grid,.metric-grid-4{grid-template-columns:1fr 1fr}
-  .task-row,.task-row-header{grid-template-columns:1fr 70px 28px}
-  .task-row input:nth-child(2),.task-row input:nth-child(3),.task-row-header span:nth-child(2),.task-row-header span:nth-child(3){display:none}
+  .task-top{grid-template-columns:1fr 70px 28px}
+  .task-top input:nth-child(2){display:none}
+  .task-row-header{grid-template-columns:1fr 70px 28px}
+  .task-row-header span:nth-child(2){display:none}
   nav{padding:0 1rem}main{padding:1.25rem 1rem}
   .leave-form-grid{grid-template-columns:1fr 1fr}
   .nav-tabs{flex-wrap:wrap;gap:1px}
@@ -294,7 +300,7 @@ tbody td.muted{color:var(--text2)}
   <div class="card">
     <div class="card-title"><div class="card-title-icon">🗂</div> Tasks & hours</div>
     <div class="task-row-header">
-      <span>Task / work item</span><span>Description</span><span>Sprint name</span>
+      <span>Task / work item</span><span>Sprint name</span>
       <span style="text-align:center">Hours</span><span></span>
     </div>
     <div class="task-list" id="task-list"></div>
@@ -599,20 +605,22 @@ tbody td.muted{color:var(--text2)}
     <div style="color:var(--text2);font-size:13.5px">Configure API keys and app settings. Keys are stored securely in your browser only — never in the source code.</div>
   </div>
   <div class="card">
-    <div class="card-title"><div class="card-title-icon">🔑</div> Google Gemini API Key</div>
+    <div class="card-title"><div class="card-title-icon">🔑</div> AI Assistant API Key (Groq)</div>
     <div style="color:var(--text2);font-size:13px;margin-bottom:12px">
-      Powers the AI Assistant. Get a free key at <a href="https://aistudio.google.com" target="_blank" style="color:var(--accent)">aistudio.google.com</a> → "Get API Key" → Create.
+      Powers the AI Assistant tab. Get a <strong>free</strong> key (no credit card needed):<br>
+      1. Go to <a href="https://console.groq.com" target="_blank" style="color:var(--accent)">console.groq.com</a> → Sign up<br>
+      2. Go to API Keys → Create API Key → Copy it
     </div>
     <div class="field" style="margin-bottom:12px">
       <label>API Key</label>
       <div style="display:flex;gap:8px">
-        <input type="password" id="settings-gemini-key" placeholder="AIzaSy..." style="flex:1"/>
+        <input type="password" id="settings-ai-key" placeholder="gsk_..." style="flex:1"/>
         <button onclick="toggleKeyVisibility()" style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:13px" id="toggle-key-btn">Show</button>
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
-      <button class="submit-btn" style="width:auto;padding:10px 24px" onclick="saveGeminiKey()">Save Key</button>
-      <button onclick="testGeminiKey()" style="padding:10px 16px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--text2)">Test Connection</button>
+      <button class="submit-btn" style="width:auto;padding:10px 24px" onclick="saveAIKey()">Save Key</button>
+      <button onclick="testAIKey()" style="padding:10px 16px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--text2)">Test Connection</button>
       <span id="key-test-result" style="font-size:12px;margin-left:8px"></span>
     </div>
     <div id="key-status" style="margin-top:12px;font-size:12px"></div>
@@ -664,8 +672,9 @@ const EMPLOYEE_MAP = {
 // Admin email addresses — these users get full access
 const ADMIN_EMAILS = ['gopal@bsharpcorp.com', 'lakshmi.raj@bsharpcorp.com'];
 
-// Google Gemini API key — entered by admin via Settings, stored in browser
-function getGeminiKey() { return localStorage.getItem('wl_gemini_key') || ''; }
+// AI API key — entered by admin via Settings, stored in browser
+function getAIKey() { return localStorage.getItem('wl_ai_key') || ''; }
+function getAIProvider() { return localStorage.getItem('wl_ai_provider') || 'groq'; }
 
 // EmailJS config for OTP emails
 const EMAILJS_PUBLIC_KEY = 'RlPyRj-3noMB8beie';
@@ -965,11 +974,13 @@ function addTask(task,desc,sprint,hours) {
   var id = 'task-'+taskCounter;
   var div = document.createElement('div');
   div.className='task-row'; div.id=id;
-  div.innerHTML = '<input type="text" placeholder="e.g. Dashboard redesign" value="'+task+'" oninput="calcTotal()"/>'+
-    '<input type="text" placeholder="Brief description" value="'+desc+'"/>'+
+  div.innerHTML = '<div class="task-top">'+
+    '<input type="text" placeholder="e.g. Dashboard redesign" value="'+task+'" oninput="calcTotal()"/>'+
     '<input type="text" placeholder="e.g. Sprint 2 / BAU" value="'+sprint+'"/>'+
     '<input type="number" class="hrs" placeholder="hrs" min="0.5" max="24" step="0.5" value="'+hours+'" oninput="calcTotal()"/>'+
-    '<button class="remove-task" onclick="removeTask(\''+id+'\')">×</button>';
+    '<button class="remove-task" onclick="removeTask(\''+id+'\')">×</button>'+
+    '</div>'+
+    '<textarea class="task-desc" placeholder="Brief description of what you worked on..." rows="4">'+desc+'</textarea>';
   document.getElementById('task-list').appendChild(div);
   calcTotal();
 }
@@ -989,8 +1000,10 @@ async function submitLog() {
   if (!date)  { showToast('Please select a date',true); return; }
   var rows=[];
   document.querySelectorAll('#task-list .task-row').forEach(function(row){
-    var inp=row.querySelectorAll('input');
-    var t=inp[0].value.trim(), d=inp[1].value.trim(), s=inp[2].value.trim(), h=parseFloat(inp[3].value)||0;
+    var inp=row.querySelectorAll('.task-top input');
+    var desc=row.querySelector('.task-desc');
+    var t=inp[0].value.trim(), s=inp[1].value.trim(), h=parseFloat(inp[2].value)||0;
+    var d=desc?desc.value.trim():'';
     if(t) rows.push([date,dname,name,team,daytype,t,d,s||'—',h,'']);
   });
   if (rows.length===0) { showToast('Please add at least one task',true); return; }
@@ -1366,9 +1379,9 @@ async function askAI(question) {
 
   addAIMessage('user', question);
 
-  var GEMINI_KEY = getGeminiKey();
-  if (!GEMINI_KEY) {
-    addAIMessage('assistant', '⚠️ **API key not configured.** Go to the **Settings** tab (admin only) to enter your Google Gemini API key. Get a free key at aistudio.google.com.');
+  var AI_KEY = getAIKey();
+  if (!AI_KEY) {
+    addAIMessage('assistant', '⚠️ **API key not configured.** Go to the **Settings** tab (admin only) to enter your API key.\n\n**Free option:** Get a Groq key at console.groq.com (no credit card needed).');
     return;
   }
 
@@ -1415,12 +1428,16 @@ async function askAI(question) {
 
     var prompt = 'You are the WorkLog AI Assistant for BSharp Corp. You help HR analyze employee work log data and expense claims. Answer questions clearly and concisely. Use the data provided below. If a calculation is needed, do it. Format numbers nicely. Use bullet points for lists.\n\nDATA:\n' + dataContext + '\n\nQUESTION: ' + question;
 
-    var response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=' + GEMINI_KEY, {
+    var response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + AI_KEY
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 1024 }
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1024
       })
     });
 
@@ -1435,8 +1452,8 @@ async function askAI(question) {
 
     var result = await response.json();
     var answer = '';
-    if (result.candidates && result.candidates[0] && result.candidates[0].content) {
-      answer = result.candidates[0].content.parts.map(function(p){ return p.text || ''; }).join('');
+    if (result.choices && result.choices[0] && result.choices[0].message) {
+      answer = result.choices[0].message.content || '';
     }
     if (!answer) answer = 'No response received. Please try again.';
     addAIMessage('assistant', answer);
@@ -1701,8 +1718,8 @@ function exportExpenseCSV() {
 // SETTINGS (Admin)
 // ============================================================
 function loadSettingsPage() {
-  var key = getGeminiKey();
-  var input = document.getElementById('settings-gemini-key');
+  var key = getAIKey();
+  var input = document.getElementById('settings-ai-key');
   if (key) {
     input.value = key;
     document.getElementById('key-status').innerHTML = '<span style="color:var(--cs)">✓ Key is saved</span>';
@@ -1711,24 +1728,24 @@ function loadSettingsPage() {
   }
 }
 
-function saveGeminiKey() {
-  var key = document.getElementById('settings-gemini-key').value.trim();
+function saveAIKey() {
+  var key = document.getElementById('settings-ai-key').value.trim();
   if (!key) { showToast('Please enter an API key',true); return; }
-  localStorage.setItem('wl_gemini_key', key);
+  localStorage.setItem('wl_ai_key', key);
   document.getElementById('key-status').innerHTML = '<span style="color:var(--cs)">✓ Key saved successfully</span>';
-  showToast('✓ Gemini API key saved');
+  showToast('✓ API key saved');
 }
 
-async function testGeminiKey() {
-  var key = document.getElementById('settings-gemini-key').value.trim();
+async function testAIKey() {
+  var key = document.getElementById('settings-ai-key').value.trim();
   if (!key) { showToast('Please enter a key first',true); return; }
   var resultEl = document.getElementById('key-test-result');
   resultEl.innerHTML = '<span class="spinner"></span> Testing...';
   try {
-    var response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=' + key, {
+    var response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: 'Say OK' }] }], generationConfig: { maxOutputTokens: 10 } })
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: 'Say OK' }], max_tokens: 10 })
     });
     if (response.ok) {
       resultEl.innerHTML = '<span style="color:var(--cs)">✓ Connected successfully!</span>';
@@ -1742,7 +1759,7 @@ async function testGeminiKey() {
 }
 
 function toggleKeyVisibility() {
-  var input = document.getElementById('settings-gemini-key');
+  var input = document.getElementById('settings-ai-key');
   var btn = document.getElementById('toggle-key-btn');
   if (input.type === 'password') { input.type = 'text'; btn.textContent = 'Hide'; }
   else { input.type = 'password'; btn.textContent = 'Show'; }
