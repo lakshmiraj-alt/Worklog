@@ -943,7 +943,7 @@ function verifyOTP() {
   logAudit('login', '<strong>' + currentUser.name + '</strong> signed in (' + (currentUser.isAdmin ? 'Admin' : 'Employee') + ')');
 }
 
-function backToEmail() {}
+function backToEmail() {
   document.getElementById('login-step-otp').classList.remove('active');
   document.getElementById('login-step-email').classList.add('active');
   document.getElementById('login-email').focus();
