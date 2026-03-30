@@ -9,16 +9,29 @@
 :root{--bg:#F7F5F0;--surface:#fff;--surface2:#F2EFE9;--border:#E0DBD1;--text:#1A1714;--text2:#6B6560;--text3:#9E9890;--accent:#C4521A;--accent-light:#F9EDE6;--tech:#1A4E8C;--tech-bg:#E8F0FA;--cs:#1A7A4A;--cs-bg:#E6F4EC;--mkt:#8C5A1A;--mkt-bg:#FAF0E6;--red:#C0392B;--red-bg:#FDECEA;--radius:10px;--radius-lg:16px;--shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100}
+/* Sidebar */
+.sidebar{position:fixed;top:0;left:0;width:220px;height:100vh;background:var(--surface);border-right:1px solid var(--border);z-index:100;display:flex;flex-direction:column;overflow-y:auto}
+.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid var(--border)}
 .logo{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);display:flex;align-items:center;gap:8px}
 .logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%}
-.nav-tabs{display:flex;gap:2px}
-.nav-tab{padding:7px 14px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);transition:all .15s;border:none;background:none}
+.nav-tabs{display:flex;flex-direction:column;padding:10px 10px;gap:2px;flex:1}
+.nav-section{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);padding:12px 10px 4px;margin-top:4px}
+.nav-section:first-child{margin-top:0}
+.nav-tab{padding:9px 14px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);transition:all .15s;border:none;background:none;text-align:left;display:flex;align-items:center;gap:8px;width:100%}
 .nav-tab:hover{background:var(--surface2);color:var(--text)}
 .nav-tab.active{background:var(--accent);color:#fff}
+.nav-tab-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sidebar-user{padding:12px 16px;border-top:1px solid var(--border);margin-top:auto}
+/* Top bar (mobile + date/user on desktop) */
+.topbar{position:fixed;top:0;left:220px;right:0;height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;z-index:99}
+.topbar-left{display:none}
+.hamburger{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text);padding:4px}
 .nav-right{font-size:12px;color:var(--text3)}
-main{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
+/* Main content offset */
+main{margin-left:220px;margin-top:52px;max-width:960px;padding:1.5rem}
 .page{display:none}.page.active{display:block}
+/* Sidebar overlay for mobile */
+.sidebar-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.3);z-index:99}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--shadow)}
 .card-title{font-family:'DM Serif Display',serif;font-size:17px;color:var(--text);margin-bottom:1.25rem;display:flex;align-items:center;gap:8px}
 .card-title-icon{width:28px;height:28px;background:var(--accent-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
@@ -203,19 +216,25 @@ tbody td.muted{color:var(--text2)}
 .ai-suggest-btn{padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:99px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s}
 .ai-suggest-btn:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
 .role-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;margin-left:6px}
-@media(max-width:600px){
+@media(max-width:768px){
+  .sidebar{left:-260px;transition:left .25s ease;box-shadow:none}
+  .sidebar.open{left:0;box-shadow:4px 0 20px rgba(0,0,0,.15)}
+  .sidebar-overlay.open{display:block}
+  .topbar{left:0}
+  .topbar-left{display:flex;align-items:center;gap:10px}
+  .hamburger{display:block}
+  main{margin-left:0;margin-top:52px;padding:1.25rem 1rem}
   .field-grid{grid-template-columns:1fr}
   .metric-grid,.metric-grid-4{grid-template-columns:1fr 1fr}
   .task-top{grid-template-columns:1fr 70px 28px}
   .task-top input:nth-child(2){display:none}
   .task-row-header{grid-template-columns:1fr 70px 28px}
   .task-row-header span:nth-child(2){display:none}
-  nav{padding:0 1rem}main{padding:1.25rem 1rem}
   .leave-form-grid{grid-template-columns:1fr 1fr}
-  .nav-tabs{flex-wrap:wrap;gap:1px}
-  .nav-tab{padding:5px 8px;font-size:11.5px}
   .ai-msg{max-width:95%}
   .ai-suggestions{gap:4px}
+  .goal-form-row{grid-template-columns:1fr 1fr}
+  .digest-config{grid-template-columns:1fr}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -260,19 +279,30 @@ tbody td.muted{color:var(--text2)}
   </div>
 </div>
 
-<nav>
-  <div class="logo"><div class="logo-dot"></div>WorkLog</div>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo"><div class="logo-dot"></div>WorkLog</div>
+  </div>
   <div class="nav-tabs" id="nav-tabs">
     <!-- Tabs populated dynamically based on role -->
   </div>
-  <div class="nav-right" style="display:flex;align-items:center;gap:10px">
-    <span id="today-label"></span>
-    <button class="user-badge" id="user-badge" onclick="handleLogout()" title="Click to sign out" style="display:none">
+  <div class="sidebar-user">
+    <button class="user-badge" id="user-badge" onclick="handleLogout()" title="Click to sign out" style="display:none;width:100%">
       <div class="user-avatar" id="user-avatar">?</div>
       <span id="user-display-name">User</span>
     </button>
   </div>
-</nav>
+</div>
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <div class="logo" style="font-size:17px"><div class="logo-dot"></div>WorkLog</div>
+  </div>
+  <div class="nav-right" style="display:flex;align-items:center;gap:10px">
+    <span id="today-label"></span>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <div class="attach-modal" id="attach-modal" onclick="if(event.target===this)closeAttachment()">
   <div class="attach-modal-box" id="attach-modal-box"></div>
@@ -974,26 +1004,37 @@ function handleLogout() {
 
 function buildNavTabs() {
   var nav = document.getElementById('nav-tabs');
-  var tabs = [];
-  // Employee tabs
-  tabs.push({ id: 'submit', label: 'Submit Log' });
-  tabs.push({ id: 'mysubs', label: 'My Submissions' });
-  tabs.push({ id: 'expenses', label: 'Expenses' });
-  // Admin-only tabs
+  var html = '';
+  // Employee section
+  html += '<div class="nav-section">Employee</div>';
+  html += navBtn('submit', '📝', 'Submit Log', true);
+  html += navBtn('mysubs', '📋', 'My Submissions');
+  html += navBtn('expenses', '💰', 'Expenses');
+  // Admin section
   if (currentUser.isAdmin) {
-    tabs.push({ id: 'dashboard', label: 'Dashboard' });
-    tabs.push({ id: 'report', label: 'Weekly Report' });
-    tabs.push({ id: 'leave', label: 'Leave Tracker' });
-    tabs.push({ id: 'expmanage', label: 'Expense Manager' });
-    tabs.push({ id: 'goals', label: 'Goals' });
-    tabs.push({ id: 'ai', label: 'AI Assistant' });
-    tabs.push({ id: 'audit', label: 'Audit Log' });
-    tabs.push({ id: 'digest', label: 'Email Digest' });
-    tabs.push({ id: 'settings', label: 'Settings' });
+    html += '<div class="nav-section">Admin</div>';
+    html += navBtn('dashboard', '📊', 'Dashboard');
+    html += navBtn('report', '📈', 'Weekly Report');
+    html += navBtn('leave', '🏖', 'Leave Tracker');
+    html += navBtn('expmanage', '💳', 'Expense Manager');
+    html += navBtn('goals', '🎯', 'Goals & KPIs');
+    html += '<div class="nav-section">Tools</div>';
+    html += navBtn('ai', '🤖', 'AI Assistant');
+    html += navBtn('audit', '📜', 'Audit Log');
+    html += navBtn('digest', '📧', 'Email Digest');
+    html += navBtn('settings', '⚙️', 'Settings');
   }
-  nav.innerHTML = tabs.map(function(t, idx) {
-    return '<button class="nav-tab' + (idx === 0 ? ' active' : '') + '" onclick="switchPage(\'' + t.id + '\',this)">' + t.label + '</button>';
-  }).join('');
+  nav.innerHTML = html;
+}
+
+function navBtn(id, icon, label, isActive) {
+  return '<button class="nav-tab' + (isActive ? ' active' : '') + '" onclick="switchPage(\'' + id + '\',this)">' +
+    '<span class="nav-tab-icon">' + icon + '</span>' + label + '</button>';
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
 }
 
 function handleLogout() {
@@ -1462,6 +1503,9 @@ function doSwitchPage(page,btn) {
   document.querySelectorAll('.nav-tab').forEach(function(b){ b.classList.remove('active'); });
   document.getElementById('page-'+page).classList.add('active');
   btn.classList.add('active');
+  // Close sidebar on mobile
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
   if (page==='dashboard') renderDashboard();
   if (page==='report') renderReport();
   if (page==='leave') { renderLeaveTable(); renderLeaveMetrics(); }
