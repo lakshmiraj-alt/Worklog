@@ -132,6 +132,30 @@ tbody td.muted{color:var(--text2)}
 .attach-modal-box{background:var(--surface);border-radius:var(--radius-lg);padding:1.5rem;max-width:600px;max-height:80vh;width:90%;overflow:auto;box-shadow:0 8px 40px rgba(0,0,0,.2)}
 .attach-modal-box img{max-width:100%;border-radius:8px}
 .attach-modal-close{position:absolute;top:16px;right:20px;background:var(--surface);border:1px solid var(--border);border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+/* Goals/KPI */
+.goal-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:10px}
+.goal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.goal-title{font-weight:600;font-size:14px;color:var(--text)}
+.goal-target{font-size:12px;color:var(--text3)}
+.goal-progress-bar{height:8px;background:var(--surface2);border-radius:99px;overflow:hidden;margin-bottom:4px}
+.goal-progress-fill{height:100%;border-radius:99px;transition:width .6s ease}
+.goal-progress-text{display:flex;justify-content:space-between;font-size:11px;color:var(--text3)}
+.goal-form-row{display:grid;grid-template-columns:1fr 1fr 1fr 80px auto;gap:8px;align-items:end;margin-bottom:10px}
+.goal-form-row select,.goal-form-row input{padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px}
+/* Audit Log */
+.audit-entry{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.audit-entry:last-child{border-bottom:none}
+.audit-time{color:var(--text3);font-size:11px;white-space:nowrap;min-width:120px}
+.audit-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.audit-icon.log{background:var(--cs-bg);color:var(--cs)}
+.audit-icon.expense{background:var(--mkt-bg);color:var(--mkt)}
+.audit-icon.status{background:var(--tech-bg);color:var(--tech)}
+.audit-icon.login{background:var(--accent-light);color:var(--accent)}
+.audit-icon.goal{background:#F3E8FA;color:#6B3A8C}
+.audit-text{flex:1;color:var(--text)}
+.audit-text strong{font-weight:600}
+/* Email Digest */
+.digest-config{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 /* Login overlay */
 .login-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center}
 .login-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2.5rem;max-width:400px;width:90%;box-shadow:var(--shadow);text-align:center}
@@ -611,6 +635,102 @@ tbody td.muted{color:var(--text2)}
   </div>
 </div>
 
+<!-- ===== GOALS / KPI TRACKER (Admin) ===== -->
+<div class="page" id="page-goals">
+  <div style="margin-bottom:1.5rem">
+    <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">Goals & KPI Tracker</div>
+    <div style="color:var(--text2);font-size:13.5px">Set weekly hour targets for individuals and teams. Progress updates automatically from work log data.</div>
+  </div>
+  <div class="card">
+    <div class="card-title"><div class="card-title-icon">🎯</div> Add new goal</div>
+    <div class="goal-form-row">
+      <div class="field"><label>Type</label>
+        <select id="goal-type" onchange="updateGoalTargetOptions()">
+          <option value="employee">Employee</option>
+          <option value="team">Team</option>
+        </select>
+      </div>
+      <div class="field"><label>Target</label>
+        <select id="goal-target"></select>
+      </div>
+      <div class="field"><label>Metric</label>
+        <select id="goal-metric">
+          <option value="hours_week">Hours / week</option>
+          <option value="tasks_week">Tasks / week</option>
+          <option value="days_week">Days submitted / week</option>
+        </select>
+      </div>
+      <div class="field"><label>Target value</label>
+        <input type="number" id="goal-value" placeholder="e.g. 40" min="1"/>
+      </div>
+      <div class="field" style="justify-content:flex-end">
+        <button class="submit-btn" style="padding:9px 16px;width:auto" onclick="addGoal()">Add</button>
+      </div>
+    </div>
+  </div>
+  <div class="section-divider" style="margin-top:1rem">Active goals — this week's progress</div>
+  <div id="goals-list">
+    <div class="empty-state">No goals set yet. Add one above.</div>
+  </div>
+</div>
+
+<!-- ===== AUDIT LOG (Admin) ===== -->
+<div class="page" id="page-audit">
+  <div class="report-header">
+    <div class="report-title">Audit Log</div>
+    <div class="filters">
+      <select id="audit-filter-type" onchange="renderAuditLog()">
+        <option value="">All activity</option>
+        <option value="log">Work logs</option>
+        <option value="expense">Expenses</option>
+        <option value="status">Status changes</option>
+        <option value="login">Logins</option>
+        <option value="goal">Goals</option>
+      </select>
+      <input type="text" id="audit-filter-search" placeholder="Search..." oninput="renderAuditLog()" style="width:140px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px"/>
+    </div>
+  </div>
+  <div class="card">
+    <div id="audit-list">
+      <div class="empty-state">No activity recorded yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EMAIL DIGEST (Admin) ===== -->
+<div class="page" id="page-digest">
+  <div style="margin-bottom:1.5rem">
+    <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">Email Digest</div>
+    <div style="color:var(--text2);font-size:13.5px">Automatically send summary emails to admin via EmailJS.</div>
+  </div>
+  <div class="card">
+    <div class="card-title"><div class="card-title-icon">📧</div> Digest configuration</div>
+    <div class="digest-config">
+      <div class="field"><label>Frequency</label>
+        <select id="digest-freq">
+          <option value="weekly">Weekly (every Monday morning)</option>
+          <option value="daily">Daily (every evening)</option>
+        </select>
+      </div>
+      <div class="field"><label>Send to email</label>
+        <input type="email" id="digest-email" placeholder="admin@bsharpcorp.com"/>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px">
+      <button class="submit-btn" style="width:auto;padding:10px 24px" onclick="saveDigestConfig()">Save Configuration</button>
+      <button onclick="sendTestDigest()" style="padding:10px 16px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--text2)">Send Test Email Now</button>
+      <span id="digest-status" style="font-size:12px;margin-left:8px"></span>
+    </div>
+    <div id="digest-config-status" style="font-size:12px;color:var(--text3)"></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><div class="card-title-icon">👁</div> Preview — what the digest looks like</div>
+    <div id="digest-preview" style="background:var(--bg);border-radius:var(--radius);padding:1rem;font-size:13px;line-height:1.7;color:var(--text)">
+      <em style="color:var(--text3)">Click "Send Test Email Now" to generate a preview</em>
+    </div>
+  </div>
+</div>
+
 <!-- ===== SETTINGS (Admin) ===== -->
 <div class="page" id="page-settings">
   <div style="margin-bottom:1.5rem">
@@ -820,9 +940,10 @@ function verifyOTP() {
   if (resendCountdown) clearInterval(resendCountdown);
   applyLogin();
   showToast('✓ Signed in as ' + currentUser.name);
+  logAudit('login', '<strong>' + currentUser.name + '</strong> signed in (' + (currentUser.isAdmin ? 'Admin' : 'Employee') + ')');
 }
 
-function backToEmail() {
+function backToEmail() {}
   document.getElementById('login-step-otp').classList.remove('active');
   document.getElementById('login-step-email').classList.add('active');
   document.getElementById('login-email').focus();
@@ -864,7 +985,10 @@ function buildNavTabs() {
     tabs.push({ id: 'report', label: 'Weekly Report' });
     tabs.push({ id: 'leave', label: 'Leave Tracker' });
     tabs.push({ id: 'expmanage', label: 'Expense Manager' });
+    tabs.push({ id: 'goals', label: 'Goals' });
     tabs.push({ id: 'ai', label: 'AI Assistant' });
+    tabs.push({ id: 'audit', label: 'Audit Log' });
+    tabs.push({ id: 'digest', label: 'Email Digest' });
     tabs.push({ id: 'settings', label: 'Settings' });
   }
   nav.innerHTML = tabs.map(function(t, idx) {
@@ -1325,7 +1449,7 @@ function exportCSV() {
 // ============================================================
 function switchPage(page,btn) {
   // Admin-only pages — block if not admin
-  var adminPages = ['dashboard','report','leave','expmanage','ai','settings'];
+  var adminPages = ['dashboard','report','leave','expmanage','ai','settings','goals','audit','digest'];
   if (adminPages.indexOf(page) !== -1 && (!currentUser || !currentUser.isAdmin)) {
     showToast('Admin access required',true);
     return;
@@ -1344,6 +1468,9 @@ function doSwitchPage(page,btn) {
   if (page==='mysubs') renderMySubmissions();
   if (page==='expenses') renderMyExpenses();
   if (page==='expmanage') renderExpenseAdmin();
+  if (page==='goals') renderGoals();
+  if (page==='audit') renderAuditLog();
+  if (page==='digest') loadDigestPage();
   if (page==='settings') loadSettingsPage();
 }
 
@@ -1655,6 +1782,7 @@ async function submitExpense() {
       body: JSON.stringify({ action: 'appendExpense', rows: [row] })
     });
     showToast('✓ Expense claim of ₹'+amount+' submitted');
+    logAudit('expense', '<strong>' + currentUser.name + '</strong> submitted expense claim — ₹' + amount + ' (' + category + ')');
     document.getElementById('exp-date').valueAsDate = new Date();
     document.getElementById('exp-amount').value = '';
     document.getElementById('exp-reason').value = '';
@@ -1790,6 +1918,7 @@ async function updateExpenseStatus(id, newStatus) {
       body: JSON.stringify({ action: 'updateExpenseStatus', id: String(id), status: newStatus })
     });
     showToast('✓ Expense marked as ' + newStatus);
+    logAudit('status', '<strong>' + currentUser.name + '</strong> marked expense as <strong>' + newStatus + '</strong>');
     setTimeout(function(){ renderExpenseAdmin(); }, 1500);
   } catch(e) { showToast('Error updating status',true); }
 }
@@ -1839,6 +1968,248 @@ function closeAttachment() {
 // ============================================================
 // SETTINGS (Admin)
 // ============================================================
+// ============================================================
+// GOALS / KPI TRACKER
+// ============================================================
+var goalsData = JSON.parse(localStorage.getItem('wl_goals') || '[]');
+
+function saveGoals() { localStorage.setItem('wl_goals', JSON.stringify(goalsData)); }
+
+function updateGoalTargetOptions() {
+  var type = document.getElementById('goal-type').value;
+  var sel = document.getElementById('goal-target');
+  if (type === 'team') {
+    sel.innerHTML = '<option>Technical</option><option>Customer Success</option><option>Marketing</option><option>Director</option><option>Admin</option>';
+  } else {
+    sel.innerHTML = ALL_EMPLOYEES.map(function(e){ return '<option>'+e+'</option>'; }).join('');
+  }
+}
+
+function addGoal() {
+  var type = document.getElementById('goal-type').value;
+  var target = document.getElementById('goal-target').value;
+  var metric = document.getElementById('goal-metric').value;
+  var value = parseFloat(document.getElementById('goal-value').value);
+  if (!target || !value || value <= 0) { showToast('Please fill in all fields',true); return; }
+  goalsData.push({ id: Date.now(), type: type, target: target, metric: metric, value: value });
+  saveGoals();
+  logAudit('goal', currentUser.name + ' set goal: ' + target + ' — ' + value + ' ' + metric.replace('_',' '));
+  showToast('✓ Goal added for ' + target);
+  document.getElementById('goal-value').value = '';
+  renderGoals();
+}
+
+function removeGoal(id) {
+  goalsData = goalsData.filter(function(g){ return g.id !== id; });
+  saveGoals();
+  renderGoals();
+}
+
+async function renderGoals() {
+  updateGoalTargetOptions();
+  if (goalsData.length === 0) {
+    document.getElementById('goals-list').innerHTML = '<div class="empty-state">No goals set yet. Add one above.</div>';
+    return;
+  }
+  var data = [];
+  try { data = await fetchFromSheet(); } catch(e){}
+  var thisWeek = data.filter(function(r){ return inWeek(r[0], 0); });
+
+  var metricLabels = { 'hours_week':'hrs/week', 'tasks_week':'tasks/week', 'days_week':'days/week' };
+  var html = goalsData.map(function(g) {
+    var actual = 0;
+    if (g.type === 'employee') {
+      var empRows = thisWeek.filter(function(r){ return r[2] === g.target; });
+      if (g.metric === 'hours_week') actual = empRows.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+      else if (g.metric === 'tasks_week') actual = empRows.length;
+      else if (g.metric === 'days_week') actual = new Set(empRows.map(function(r){ return toISO(toDateObj(r[0])); })).size;
+    } else {
+      var teamRows = thisWeek.filter(function(r){ return r[3] === g.target; });
+      if (g.metric === 'hours_week') actual = teamRows.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+      else if (g.metric === 'tasks_week') actual = teamRows.length;
+      else if (g.metric === 'days_week') actual = new Set(teamRows.map(function(r){ return r[2]+'|'+toISO(toDateObj(r[0])); })).size;
+    }
+    var pct = Math.min(100, Math.round((actual / g.value) * 100));
+    var color = pct >= 100 ? 'var(--cs)' : pct >= 60 ? 'var(--accent)' : 'var(--red)';
+    return '<div class="goal-card">'+
+      '<div class="goal-header">'+
+        '<div><span class="goal-title">'+(g.type==='team'?'🏢 ':'👤 ')+g.target+'</span>'+
+        '<span class="goal-target" style="margin-left:8px">Target: '+g.value+' '+metricLabels[g.metric]+'</span></div>'+
+        '<button onclick="removeGoal('+g.id+')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px" title="Remove">×</button>'+
+      '</div>'+
+      '<div class="goal-progress-bar"><div class="goal-progress-fill" style="width:'+pct+'%;background:'+color+'"></div></div>'+
+      '<div class="goal-progress-text"><span>'+actual+' / '+g.value+' '+metricLabels[g.metric]+'</span><span style="font-weight:600;color:'+color+'">'+pct+'%</span></div>'+
+    '</div>';
+  }).join('');
+  document.getElementById('goals-list').innerHTML = html;
+}
+
+// ============================================================
+// AUDIT LOG
+// ============================================================
+var auditLog = JSON.parse(localStorage.getItem('wl_audit') || '[]');
+
+function saveAuditLog() {
+  // Keep only last 500 entries
+  if (auditLog.length > 500) auditLog = auditLog.slice(-500);
+  localStorage.setItem('wl_audit', JSON.stringify(auditLog));
+}
+
+function logAudit(type, message) {
+  auditLog.push({
+    time: new Date().toISOString(),
+    type: type,
+    message: message,
+    user: currentUser ? currentUser.name : 'System'
+  });
+  saveAuditLog();
+}
+
+function renderAuditLog() {
+  var typeF = (document.getElementById('audit-filter-type')||{}).value || '';
+  var searchF = ((document.getElementById('audit-filter-search')||{}).value || '').toLowerCase();
+  var filtered = auditLog.filter(function(a) {
+    if (typeF && a.type !== typeF) return false;
+    if (searchF && a.message.toLowerCase().indexOf(searchF) === -1 && a.user.toLowerCase().indexOf(searchF) === -1) return false;
+    return true;
+  }).reverse(); // newest first
+
+  if (filtered.length === 0) {
+    document.getElementById('audit-list').innerHTML = '<div class="empty-state">No activity matching filters.</div>';
+    return;
+  }
+  var iconMap = { 'log':'audit-icon log', 'expense':'audit-icon expense', 'status':'audit-icon status', 'login':'audit-icon login', 'goal':'audit-icon goal' };
+  var emojiMap = { 'log':'📝', 'expense':'💰', 'status':'🔄', 'login':'🔑', 'goal':'🎯' };
+  document.getElementById('audit-list').innerHTML = filtered.slice(0, 100).map(function(a) {
+    var d = new Date(a.time);
+    var timeStr = d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' ' + d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    return '<div class="audit-entry">'+
+      '<div class="'+(iconMap[a.type]||'audit-icon log')+'">'+(emojiMap[a.type]||'📝')+'</div>'+
+      '<div class="audit-text">'+a.message+'</div>'+
+      '<div class="audit-time">'+timeStr+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+// ============================================================
+// EMAIL DIGEST
+// ============================================================
+function loadDigestPage() {
+  var config = JSON.parse(localStorage.getItem('wl_digest_config') || 'null');
+  if (config) {
+    document.getElementById('digest-freq').value = config.freq || 'weekly';
+    document.getElementById('digest-email').value = config.email || '';
+    document.getElementById('digest-config-status').innerHTML = '<span style="color:var(--cs)">✓ Digest configured — ' + config.freq + ' to ' + config.email + '</span>';
+  }
+}
+
+function saveDigestConfig() {
+  var freq = document.getElementById('digest-freq').value;
+  var email = document.getElementById('digest-email').value.trim();
+  if (!email) { showToast('Please enter an email address',true); return; }
+  localStorage.setItem('wl_digest_config', JSON.stringify({ freq: freq, email: email }));
+  document.getElementById('digest-config-status').innerHTML = '<span style="color:var(--cs)">✓ Configuration saved — ' + freq + ' to ' + email + '</span>';
+  showToast('✓ Digest configuration saved');
+  logAudit('status', currentUser.name + ' configured email digest: ' + freq + ' to ' + email);
+}
+
+async function sendTestDigest() {
+  var email = document.getElementById('digest-email').value.trim();
+  if (!email) { showToast('Please enter an email address first',true); return; }
+  var statusEl = document.getElementById('digest-status');
+  statusEl.innerHTML = '<span class="spinner"></span> Generating...';
+
+  try {
+    var data = await fetchFromSheet();
+    var expenses = [];
+    try { expenses = await fetchExpenses(); } catch(ex){}
+
+    var today = todayISO();
+    var thisWeek = data.filter(function(r){ return inWeek(r[0], 0); });
+    var lastWeek = data.filter(function(r){ return inWeek(r[0], -1); });
+    var totalHrs = thisWeek.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+    var lastHrs = lastWeek.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+    var uniqueEmps = new Set(thisWeek.map(function(r){ return r[2]; })).size;
+    var submittedToday = [...new Set(data.filter(function(r){ return toISO(toDateObj(r[0]))===today; }).map(function(r){ return r[2]; }))];
+    var notSubmitted = ALL_EMPLOYEES.filter(function(e){ return submittedToday.indexOf(e)===-1; });
+    var pendingExp = expenses.filter(function(e){ return e.status==='Pending'; });
+
+    // Team breakdown
+    var teamHrs = {};
+    thisWeek.forEach(function(r){ teamHrs[r[3]]=(teamHrs[r[3]]||0)+(parseFloat(r[8])||0); });
+
+    var digestBody = '📊 WorkLog Weekly Digest\n' +
+      '━━━━━━━━━━━━━━━━━━\n\n' +
+      '📅 Week of ' + today + '\n\n' +
+      '⏱ Total hours: ' + totalHrs + 'h (last week: ' + lastHrs + 'h, ' + (totalHrs>=lastHrs?'↑':'↓') + Math.abs(totalHrs-lastHrs) + 'h)\n' +
+      '👥 Active employees: ' + uniqueEmps + '/' + ALL_EMPLOYEES.length + '\n' +
+      '📈 Avg per person: ' + (uniqueEmps?(totalHrs/uniqueEmps).toFixed(1):'0') + 'h\n\n' +
+      '🏢 Hours by team:\n';
+    Object.keys(teamHrs).sort().forEach(function(t){ digestBody += '  • ' + t + ': ' + teamHrs[t] + 'h\n'; });
+
+    if (notSubmitted.length > 0) {
+      digestBody += '\n⚠️ Not submitted today (' + notSubmitted.length + '):\n  ' + notSubmitted.join(', ') + '\n';
+    } else {
+      digestBody += '\n✅ All employees submitted today!\n';
+    }
+
+    if (pendingExp.length > 0) {
+      var pendingTotal = pendingExp.reduce(function(s,e){ return s+e.amount; },0);
+      digestBody += '\n💰 Pending expenses: ' + pendingExp.length + ' claims (₹' + pendingTotal.toLocaleString('en-IN') + ')\n';
+    }
+
+    // Goals progress
+    if (goalsData.length > 0) {
+      digestBody += '\n🎯 Goals progress:\n';
+      goalsData.forEach(function(g) {
+        var actual = 0;
+        var rows = g.type==='employee' ? thisWeek.filter(function(r){return r[2]===g.target;}) : thisWeek.filter(function(r){return r[3]===g.target;});
+        if (g.metric==='hours_week') actual = rows.reduce(function(s,r){return s+(parseFloat(r[8])||0);},0);
+        else if (g.metric==='tasks_week') actual = rows.length;
+        else actual = new Set(rows.map(function(r){return (g.type==='team'?r[2]+'|':'')+toISO(toDateObj(r[0]));})).size;
+        var pct = Math.round((actual/g.value)*100);
+        digestBody += '  • ' + g.target + ': ' + actual + '/' + g.value + ' (' + pct + '%)\n';
+      });
+    }
+
+    // Show preview
+    document.getElementById('digest-preview').innerHTML = '<pre style="white-space:pre-wrap;font-family:\'DM Sans\',sans-serif;font-size:13px;line-height:1.7;margin:0">' + digestBody + '</pre>';
+
+    // Send via EmailJS
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: email,
+      to_name: 'Admin',
+      otp_code: digestBody
+    });
+    statusEl.innerHTML = '<span style="color:var(--cs)">✓ Digest sent to ' + email + '</span>';
+    logAudit('status', currentUser.name + ' sent email digest to ' + email);
+    showToast('✓ Digest email sent');
+  } catch(e) {
+    statusEl.innerHTML = '<span style="color:var(--red)">✗ ' + (e.text || e.message || 'Failed to send') + '</span>';
+  }
+}
+
+// ============================================================
+// AUDIT LOG HOOKS — Auto-log key actions
+// ============================================================
+var _origSubmitLog = typeof submitLog === 'function' ? submitLog : null;
+var _origSubmitExpense = typeof submitExpense === 'function' ? submitExpense : null;
+
+// We'll inject audit logging into existing functions via wrappers
+function wrapAuditHooks() {
+  // Hook into submit log
+  var origPostToSheet = postToSheet;
+  postToSheet = async function(rows) {
+    var result = await origPostToSheet(rows);
+    if (rows.length > 0 && currentUser) {
+      var totalH = rows.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+      logAudit('log', '<strong>' + currentUser.name + '</strong> submitted daily log — ' + rows.length + ' task(s), ' + totalH + 'h');
+    }
+    return result;
+  };
+}
+
 function loadSettingsPage() {
   var key = getAIKey();
   var input = document.getElementById('settings-ai-key');
@@ -1914,6 +2285,7 @@ window.addEventListener('load',function(){
   document.getElementById('today-label').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
   addTask();
   checkExistingLogin();
+  wrapAuditHooks();
 });
 </script>
 </body>
