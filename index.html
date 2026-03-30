@@ -618,16 +618,16 @@ tbody td.muted{color:var(--text2)}
     <div style="color:var(--text2);font-size:13.5px">Configure API keys and app settings. Keys are stored securely in your browser only — never in the source code.</div>
   </div>
   <div class="card">
-    <div class="card-title"><div class="card-title-icon">🔑</div> AI Assistant API Key (Groq)</div>
+    <div class="card-title"><div class="card-title-icon">🔑</div> AI Assistant API Key</div>
     <div style="color:var(--text2);font-size:13px;margin-bottom:12px">
-      Powers the AI Assistant tab. Get a <strong>free</strong> key (no credit card needed):<br>
-      1. Go to <a href="https://console.groq.com" target="_blank" style="color:var(--accent)">console.groq.com</a> → Sign up<br>
-      2. Go to API Keys → Create API Key → Copy it
+      Powers the AI Assistant tab. Supports <strong>Groq</strong> (free) or <strong>Anthropic Claude</strong> (paid). The key type is auto-detected.<br><br>
+      <strong>Free option:</strong> <a href="https://console.groq.com" target="_blank" style="color:var(--accent)">console.groq.com</a> → Sign up → API Keys → Create (starts with <code>gsk_</code>)<br>
+      <strong>Paid option:</strong> <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a> → API Keys → Create (starts with <code>sk-ant-</code>)
     </div>
     <div class="field" style="margin-bottom:12px">
       <label>API Key</label>
       <div style="display:flex;gap:8px">
-        <input type="password" id="settings-ai-key" placeholder="gsk_..." style="flex:1"/>
+        <input type="password" id="settings-ai-key" placeholder="gsk_... or sk-ant-..." style="flex:1"/>
         <button onclick="toggleKeyVisibility()" style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:13px" id="toggle-key-btn">Show</button>
       </div>
     </div>
@@ -687,7 +687,11 @@ const ADMIN_EMAILS = ['gopal@bsharpcorp.com', 'lakshmi.raj@bsharpcorp.com'];
 
 // AI API key — entered by admin via Settings, stored in browser
 function getAIKey() { return localStorage.getItem('wl_ai_key') || ''; }
-function getAIProvider() { return localStorage.getItem('wl_ai_provider') || 'groq'; }
+function detectProvider(key) {
+  if (key.startsWith('sk-ant-')) return 'anthropic';
+  if (key.startsWith('gsk_')) return 'groq';
+  return 'groq'; // default
+}
 
 // EmailJS config for OTP emails
 const EMAILJS_PUBLIC_KEY = 'RlPyRj-3noMB8beie';
@@ -1441,33 +1445,57 @@ async function askAI(question) {
 
     var prompt = 'You are the WorkLog AI Assistant for BSharp Corp. You help HR analyze employee work log data and expense claims. Answer questions clearly and concisely. Use the data provided below. If a calculation is needed, do it. Format numbers nicely. Use bullet points for lists.\n\nDATA:\n' + dataContext + '\n\nQUESTION: ' + question;
 
-    var response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + AI_KEY
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1024
-      })
-    });
+    var provider = detectProvider(AI_KEY);
+    var response, result, answer = '';
 
-    removeAITyping();
-
-    if (!response.ok) {
-      var errData = await response.json().catch(function(){ return {}; });
-      var errMsg = (errData.error && errData.error.message) || 'API error (' + response.status + ')';
-      addAIMessage('assistant', '⚠️ **Error:** ' + errMsg);
-      return;
+    if (provider === 'anthropic') {
+      response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': AI_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      removeAITyping();
+      if (!response.ok) {
+        var errData = await response.json().catch(function(){ return {}; });
+        addAIMessage('assistant', '⚠️ **Error:** ' + ((errData.error && errData.error.message) || 'API error (' + response.status + ')'));
+        return;
+      }
+      result = await response.json();
+      answer = result.content.map(function(c){ return c.text || ''; }).join('');
+    } else {
+      response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + AI_KEY
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 1024
+        })
+      });
+      removeAITyping();
+      if (!response.ok) {
+        var errData = await response.json().catch(function(){ return {}; });
+        addAIMessage('assistant', '⚠️ **Error:** ' + ((errData.error && errData.error.message) || 'API error (' + response.status + ')'));
+        return;
+      }
+      result = await response.json();
+      if (result.choices && result.choices[0] && result.choices[0].message) {
+        answer = result.choices[0].message.content || '';
+      }
     }
 
-    var result = await response.json();
-    var answer = '';
-    if (result.choices && result.choices[0] && result.choices[0].message) {
-      answer = result.choices[0].message.content || '';
-    }
     if (!answer) answer = 'No response received. Please try again.';
     addAIMessage('assistant', answer);
 
@@ -1816,7 +1844,8 @@ function loadSettingsPage() {
   var input = document.getElementById('settings-ai-key');
   if (key) {
     input.value = key;
-    document.getElementById('key-status').innerHTML = '<span style="color:var(--cs)">✓ Key is saved</span>';
+    var provider = detectProvider(key);
+    document.getElementById('key-status').innerHTML = '<span style="color:var(--cs)">✓ Key saved — using ' + (provider === 'anthropic' ? 'Anthropic Claude' : 'Groq (free)') + '</span>';
   } else {
     document.getElementById('key-status').innerHTML = '<span style="color:var(--text3)">No key configured yet</span>';
   }
@@ -1834,15 +1863,25 @@ async function testAIKey() {
   var key = document.getElementById('settings-ai-key').value.trim();
   if (!key) { showToast('Please enter a key first',true); return; }
   var resultEl = document.getElementById('key-test-result');
-  resultEl.innerHTML = '<span class="spinner"></span> Testing...';
+  var provider = detectProvider(key);
+  resultEl.innerHTML = '<span class="spinner"></span> Testing ' + (provider === 'anthropic' ? 'Claude' : 'Groq') + '...';
   try {
-    var response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: 'Say OK' }], max_tokens: 10 })
-    });
+    var response;
+    if (provider === 'anthropic') {
+      response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 10, messages: [{ role: 'user', content: 'Say OK' }] })
+      });
+    } else {
+      response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: 'Say OK' }], max_tokens: 10 })
+      });
+    }
     if (response.ok) {
-      resultEl.innerHTML = '<span style="color:var(--cs)">✓ Connected successfully!</span>';
+      resultEl.innerHTML = '<span style="color:var(--cs)">✓ Connected to ' + (provider === 'anthropic' ? 'Claude' : 'Groq') + '!</span>';
     } else {
       var err = await response.json().catch(function(){ return {}; });
       resultEl.innerHTML = '<span style="color:var(--red)">✗ ' + ((err.error && err.error.message) || 'Invalid key') + '</span>';
