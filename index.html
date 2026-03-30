@@ -668,6 +668,67 @@ tbody td.muted{color:var(--text2)}
   </div>
 </div>
 
+<!-- ===== MANAGE EMPLOYEES (Admin) ===== -->
+<div class="page" id="page-employees">
+  <div style="margin-bottom:1.5rem">
+    <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">Manage Employees</div>
+    <div style="color:var(--text2);font-size:13.5px">Add, remove, and manage employee access. Changes are saved to Google Sheets.</div>
+  </div>
+  <div class="card">
+    <div class="card-title"><div class="card-title-icon">➕</div> Add new employee</div>
+    <div class="field-grid">
+      <div class="field"><label>Full name</label><input type="text" id="emp-add-name" placeholder="e.g. John Doe"/></div>
+      <div class="field"><label>Email</label><input type="email" id="emp-add-email" placeholder="john@bsharpcorp.com"/></div>
+      <div class="field"><label>Team / Department</label>
+        <select id="emp-add-team">
+          <option>Technical</option><option>Customer Success</option><option>Marketing</option>
+          <option>Director</option><option>Admin</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field"><label>Role</label>
+        <select id="emp-add-role">
+          <option value="employee">Employee</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text2);display:block;margin-bottom:6px">Permissions</label>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        <label style="font-size:13px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="emp-perm-submit" checked/> Submit Log</label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="emp-perm-mysubs" checked/> My Submissions</label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="emp-perm-expenses" checked/> Expenses</label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="emp-perm-dashboard"/> Dashboard</label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="emp-perm-report"/> Weekly Report</label>
+      </div>
+    </div>
+    <button class="submit-btn" style="width:auto;padding:10px 24px" onclick="addEmployee()">Add Employee</button>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="section-divider" style="margin-bottom:0">All employees (<span id="emp-count">0</span>)</div>
+      <div class="filters">
+        <select id="emp-filter-team" onchange="renderEmployeeManager()">
+          <option value="">All teams</option>
+          <option>Technical</option><option>Customer Success</option><option>Marketing</option>
+          <option>Director</option><option>Admin</option>
+        </select>
+        <select id="emp-filter-role" onchange="renderEmployeeManager()">
+          <option value="">All roles</option>
+          <option value="admin">Admins</option>
+          <option value="employee">Employees</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Team</th><th>Role</th><th>Permissions</th><th>Actions</th></tr></thead>
+        <tbody id="emp-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- ===== GOALS / KPI TRACKER (Admin) ===== -->
 <div class="page" id="page-goals">
   <div style="margin-bottom:1.5rem">
@@ -805,45 +866,97 @@ tbody td.muted{color:var(--text2)}
 // CONFIG
 // ============================================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCQ6idxkTeWzI6099yIoWwF5s4QPzf85E0UFgNnUn3wUQNux-A_sYOO_81FiHJNFK0XQ/exec';
-const ALL_EMPLOYEES = ['Akash Kateemanee','Avinash S','Azhar Rafiq Majkure','Chandana v','D Lakshmi','Eada Jaison','Geetha H G','Gopal Swaminathan','Kavya Rajkumar','Lakshmi Raj','Manjula Jagadish','Mohammed L','Nandini S','Nikhil Pk','Ojaswani Sahu','Pavan Kumar R','Rajeev Mehta','Ranjitha P','Robert Hitler','Stebin Sabu','Syed Waqhas','Vishwantha','Jasmine Mary','Tanuj'];
 
-// Employee email → name & team mapping
-const EMPLOYEE_MAP = {
-  'akash@bsharpcorp.com': { name:'Akash Kateemanee', team:'Customer Success' },
-  'avinash.s@bsharpcorp.com': { name:'Avinash S', team:'Technical' },
-  'azhar.majkure@bsharpcorp.com': { name:'Azhar Rafiq Majkure', team:'Technical' },
-  'chandana.v@bsharpcorp.com': { name:'Chandana v', team:'Technical' },
-  'geetha.hg@bsharpcorp.com': { name:'Geetha H G', team:'Technical' },
-  'gopal@bsharpcorp.com': { name:'Gopal Swaminathan', team:'Director' },
-  'jaison.eada@bsharpcorp.com': { name:'Eada Jaison', team:'Customer Success' },
-  'jasmine@bsharpcorp.com': { name:'Jasmine Mary', team:'Technical' },
-  'kavya.rajkumar@bsharpcorp.com': { name:'Kavya Rajkumar', team:'Customer Success' },
-  'lakshmi.dakyanoik@bsharpcorp.com': { name:'D Lakshmi', team:'Technical' },
-  'lakshmi.raj@bsharpcorp.com': { name:'Lakshmi Raj', team:'Admin' },
-  'manjula.jagadish@bsharpcorp.com': { name:'Manjula Jagadish', team:'Customer Success' },
-  'mohammed.adam@bsharpcorp.com': { name:'Mohammed L', team:'Marketing' },
-  'nandini@bsharpcorp.com': { name:'Nandini S', team:'Technical' },
-  'nikhil.pk@bsharpcorp.com': { name:'Nikhil Pk', team:'Technical' },
-  'ojaswani.sahu@bsharpcorp.com': { name:'Ojaswani Sahu', team:'Customer Success' },
-  'pavan.ram@bsharpcorp.com': { name:'Pavan Kumar R', team:'Customer Success' },
-  'rajeev.mehta@bsharpcorp.com': { name:'Rajeev Mehta', team:'Customer Success' },
-  'ranjitha.p@bsharpcorp.com': { name:'Ranjitha P', team:'Technical' },
-  'robert.h@bsharpcorp.com': { name:'Robert Hitler', team:'Marketing' },
-  'stebin@bsharpcorp.com': { name:'Stebin Sabu', team:'Technical' },
-  'syed.waqhas@bsharpcorp.com': { name:'Syed Waqhas', team:'Customer Success' },
-  'tanuj@bsharpcorp.com': { name:'Tanuj', team:'Technical' },
-  'vishwanatha@bsharpcorp.com': { name:'Vishwantha', team:'Technical' }
-};
+// Hardcoded defaults — used as fallback if Employees sheet doesn't exist yet
+const DEFAULT_EMPLOYEES = [
+  {email:'akash@bsharpcorp.com',name:'Akash Kateemanee',team:'Customer Success',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'avinash.s@bsharpcorp.com',name:'Avinash S',team:'Technical',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'azhar.majkure@bsharpcorp.com',name:'Azhar Rafiq Majkure',team:'Technical',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'chandana.v@bsharpcorp.com',name:'Chandana v',team:'Technical',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'geetha.hg@bsharpcorp.com',name:'Geetha H G',team:'Technical',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'gopal@bsharpcorp.com',name:'Gopal Swaminathan',team:'Director',role:'admin',perms:'submit,mysubs,expenses,dashboard,report'},
+  {email:'jaison.eada@bsharpcorp.com',name:'Eada Jaison',team:'Customer Success',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'jasmine@bsharpcorp.com',name:'Jasmine Mary',team:'Technical',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'kavya.rajkumar@bsharpcorp.com',name:'Kavya Rajkumar',team:'Customer Success',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'lakshmi.dakyanoik@bsharpcorp.com',name:'D Lakshmi',team:'Technical',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'lakshmi.raj@bsharpcorp.com',name:'Lakshmi Raj',team:'Admin',role:'admin',perms:'submit,mysubs,expenses,dashboard,report'},
+  {email:'manjula.jagadish@bsharpcorp.com',name:'Manjula Jagadish',team:'Customer Success',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'mohammed.adam@bsharpcorp.com',name:'Mohammed L',team:'Marketing',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'nandini@bsharpcorp.com',name:'Nandini S',team:'Technical',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'nikhil.pk@bsharpcorp.com',name:'Nikhil Pk',team:'Technical',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'ojaswani.sahu@bsharpcorp.com',name:'Ojaswani Sahu',team:'Customer Success',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'pavan.ram@bsharpcorp.com',name:'Pavan Kumar R',team:'Customer Success',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'rajeev.mehta@bsharpcorp.com',name:'Rajeev Mehta',team:'Customer Success',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'ranjitha.p@bsharpcorp.com',name:'Ranjitha P',team:'Technical',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'robert.h@bsharpcorp.com',name:'Robert Hitler',team:'Marketing',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'stebin@bsharpcorp.com',name:'Stebin Sabu',team:'Technical',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'syed.waqhas@bsharpcorp.com',name:'Syed Waqhas',team:'Customer Success',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'tanuj@bsharpcorp.com',name:'Tanuj',team:'Technical',role:'employee',perms:'submit,mysubs,expenses'},
+  {email:'vishwanatha@bsharpcorp.com',name:'Vishwantha',team:'Technical',role:'employee',perms:'submit,mysubs,expenses'}
+];
 
-// Admin email addresses — these users get full access
-const ADMIN_EMAILS = ['gopal@bsharpcorp.com', 'lakshmi.raj@bsharpcorp.com'];
+// Dynamic employee list — loaded from Sheet or defaults
+var employeeList = [];
+var EMPLOYEE_MAP = {};
+var ALL_EMPLOYEES = [];
+
+function buildEmployeeMaps() {
+  EMPLOYEE_MAP = {};
+  ALL_EMPLOYEES = [];
+  employeeList.forEach(function(e) {
+    EMPLOYEE_MAP[e.email] = { name: e.name, team: e.team, role: e.role || 'employee', perms: e.perms || 'submit,mysubs,expenses' };
+    ALL_EMPLOYEES.push(e.name);
+  });
+}
+
+function fetchEmployeeList() {
+  return new Promise(function(resolve) {
+    var cb = 'emp_' + Date.now();
+    var script = document.createElement('script');
+    var done = false;
+    var timer = setTimeout(function() {
+      if (done) return; done = true; cleanup();
+      // Fallback to cached or defaults
+      var c = localStorage.getItem('wl_emp_cache');
+      if (c) { try { resolve(JSON.parse(c)); return; } catch(ex){} }
+      resolve(DEFAULT_EMPLOYEES);
+    }, 8000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(ex){}
+      try { if (script.parentNode) script.parentNode.removeChild(script); } catch(ex){}
+    }
+    window[cb] = function(data) {
+      if (done) return; done = true; cleanup();
+      if (data && data.status === 'ok' && data.data && data.data.length > 0) {
+        var list = data.data.map(function(r) {
+          return { email: String(r[0]||'').toLowerCase(), name: String(r[1]||''), team: String(r[2]||''), role: String(r[3]||'employee'), perms: String(r[4]||'submit,mysubs,expenses') };
+        });
+        try { localStorage.setItem('wl_emp_cache', JSON.stringify(list)); } catch(ex){}
+        resolve(list);
+      } else {
+        var c = localStorage.getItem('wl_emp_cache');
+        if (c) { try { resolve(JSON.parse(c)); return; } catch(ex){} }
+        resolve(DEFAULT_EMPLOYEES);
+      }
+    };
+    script.src = SCRIPT_URL + '?sheet=Employees&callback=' + cb + '&t=' + Date.now();
+    script.onerror = function() {
+      if (done) return; done = true; cleanup();
+      var c = localStorage.getItem('wl_emp_cache');
+      if (c) { try { resolve(JSON.parse(c)); return; } catch(ex){} }
+      resolve(DEFAULT_EMPLOYEES);
+    };
+    document.head.appendChild(script);
+  });
+}
 
 // AI API key — entered by admin via Settings, stored in browser
 function getAIKey() { return localStorage.getItem('wl_ai_key') || ''; }
 function detectProvider(key) {
   if (key.startsWith('sk-ant-')) return 'anthropic';
   if (key.startsWith('gsk_')) return 'groq';
-  return 'groq'; // default
+  return 'groq';
 }
 
 // EmailJS config for OTP emails
@@ -854,7 +967,7 @@ const EMAILJS_TEMPLATE_ID = 'template_w0wosp2';
 let dashAllRows = [];
 let dashWeekOffset = 0;
 let mySubsWeekOffset = 0;
-let currentUser = null; // { email, name, team, isAdmin }
+let currentUser = null; // { email, name, team, isAdmin, perms }
 let expenseData = []; // loaded from Google Sheet
 let pendingOTPEmail = '';
 let generatedOTP = '';
@@ -864,17 +977,44 @@ let resendCountdown = null;
 // OTP EMAIL LOGIN SYSTEM (with Admin detection)
 // ============================================================
 
-function checkExistingLogin() {
+async function checkExistingLogin() {
+  // Load employee list from Sheet first
+  employeeList = await fetchEmployeeList();
+  buildEmployeeMaps();
+  // Populate submit form dropdown
+  populateEmployeeDropdowns();
+
   try {
     var saved = JSON.parse(localStorage.getItem('wl_login') || 'null');
     if (saved && saved.email && saved.expires && Date.now() < saved.expires) {
-      currentUser = { email: saved.email, name: saved.name, team: saved.team, isAdmin: ADMIN_EMAILS.indexOf(saved.email) !== -1 };
+      var emp = EMPLOYEE_MAP[saved.email];
+      if (emp) {
+        currentUser = { email: saved.email, name: emp.name, team: emp.team, isAdmin: emp.role === 'admin', perms: emp.perms || 'submit,mysubs,expenses' };
+      } else {
+        currentUser = { email: saved.email, name: saved.name, team: saved.team, isAdmin: false, perms: 'submit,mysubs,expenses' };
+      }
       applyLogin();
       return;
     }
   } catch(e){}
   document.getElementById('login-overlay').style.display = 'flex';
   setupOTPInputs();
+}
+
+function populateEmployeeDropdowns() {
+  var nameSelect = document.getElementById('f-name');
+  if (!nameSelect) return;
+  nameSelect.innerHTML = '<option value="">— Select employee —</option>' +
+    employeeList.map(function(e) {
+      return '<option data-team="'+e.team+'">'+e.name+'</option>';
+    }).join('');
+  // Also update leave tracker dropdowns
+  ['lv-name','lv-filter-name'].forEach(function(id) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    var firstOpt = id === 'lv-filter-name' ? '<option value="">All employees</option>' : '<option value="">— Select —</option>';
+    sel.innerHTML = firstOpt + ALL_EMPLOYEES.map(function(n){ return '<option>'+n+'</option>'; }).join('');
+  });
 }
 
 function setupOTPInputs() {
@@ -964,7 +1104,7 @@ function verifyOTP() {
   if (code !== generatedOTP) { errEl.textContent = 'Invalid code. Please check and try again.'; return; }
 
   var emp = EMPLOYEE_MAP[pendingOTPEmail];
-  currentUser = { email: pendingOTPEmail, name: emp.name, team: emp.team, isAdmin: ADMIN_EMAILS.indexOf(pendingOTPEmail) !== -1 };
+  currentUser = { email: pendingOTPEmail, name: emp.name, team: emp.team, isAdmin: emp.role === 'admin', perms: emp.perms || 'submit,mysubs,expenses' };
   localStorage.setItem('wl_login', JSON.stringify({
     email: pendingOTPEmail, name: emp.name, team: emp.team,
     expires: Date.now() + (7 * 24 * 60 * 60 * 1000)
@@ -1008,11 +1148,14 @@ function handleLogout() {
 function buildNavTabs() {
   var nav = document.getElementById('nav-tabs');
   var html = '';
-  // Employee section
+  var perms = currentUser.perms || '';
+  // Employee section — based on permissions
   html += '<div class="nav-section">Employee</div>';
-  html += navBtn('submit', '📝', 'Submit Log', true);
-  html += navBtn('mysubs', '📋', 'My Submissions');
-  html += navBtn('expenses', '💰', 'Expenses');
+  if (perms.indexOf('submit') !== -1) html += navBtn('submit', '📝', 'Submit Log', true);
+  if (perms.indexOf('mysubs') !== -1) html += navBtn('mysubs', '📋', 'My Submissions');
+  if (perms.indexOf('expenses') !== -1) html += navBtn('expenses', '💰', 'Expenses');
+  if (perms.indexOf('dashboard') !== -1 && !currentUser.isAdmin) html += navBtn('dashboard', '📊', 'Dashboard');
+  if (perms.indexOf('report') !== -1 && !currentUser.isAdmin) html += navBtn('report', '📈', 'Weekly Report');
   // Admin section
   if (currentUser.isAdmin) {
     html += '<div class="nav-section">Admin</div>';
@@ -1021,6 +1164,7 @@ function buildNavTabs() {
     html += navBtn('leave', '🏖', 'Leave Tracker');
     html += navBtn('expmanage', '💳', 'Expense Manager');
     html += navBtn('goals', '🎯', 'Goals & KPIs');
+    html += navBtn('employees', '👥', 'Manage Employees');
     html += '<div class="nav-section">Tools</div>';
     html += navBtn('ai', '🤖', 'AI Assistant');
     html += navBtn('audit', '📜', 'Audit Log');
@@ -1492,11 +1636,18 @@ function exportCSV() {
 // NAV & UTILS
 // ============================================================
 function switchPage(page,btn) {
-  // Admin-only pages — block if not admin
-  var adminPages = ['dashboard','report','leave','expmanage','ai','settings','goals','audit','digest'];
-  if (adminPages.indexOf(page) !== -1 && (!currentUser || !currentUser.isAdmin)) {
+  var adminOnlyPages = ['leave','expmanage','ai','settings','goals','audit','digest','employees'];
+  var permPages = ['dashboard','report'];
+  if (adminOnlyPages.indexOf(page) !== -1 && (!currentUser || !currentUser.isAdmin)) {
     showToast('Admin access required',true);
     return;
+  }
+  if (permPages.indexOf(page) !== -1 && !currentUser.isAdmin) {
+    var perms = currentUser.perms || '';
+    if (perms.indexOf(page) === -1) {
+      showToast('You don\'t have access to this section',true);
+      return;
+    }
   }
   doSwitchPage(page, btn);
 }
@@ -1516,6 +1667,7 @@ function doSwitchPage(page,btn) {
   if (page==='expenses') renderMyExpenses();
   if (page==='expmanage') renderExpenseAdmin();
   if (page==='goals') renderGoals();
+  if (page==='employees') renderEmployeeManager();
   if (page==='audit') renderAuditLog();
   if (page==='digest') loadDigestPage();
   if (page==='settings') loadSettingsPage();
@@ -2015,6 +2167,139 @@ function closeAttachment() {
 // ============================================================
 // SETTINGS (Admin)
 // ============================================================
+// ============================================================
+// MANAGE EMPLOYEES
+// ============================================================
+function renderEmployeeManager() {
+  var teamF = (document.getElementById('emp-filter-team')||{}).value || '';
+  var roleF = (document.getElementById('emp-filter-role')||{}).value || '';
+  var filtered = employeeList.filter(function(e) {
+    if (teamF && e.team !== teamF) return false;
+    if (roleF && e.role !== roleF) return false;
+    return true;
+  });
+  document.getElementById('emp-count').textContent = employeeList.length;
+  var tClass = {'Technical':'badge-tech','Customer Success':'badge-cs','Marketing':'badge-mkt'};
+  var permLabels = {'submit':'Submit','mysubs':'My Subs','expenses':'Expenses','dashboard':'Dashboard','report':'Report'};
+  var tbody = document.getElementById('emp-tbody');
+  tbody.innerHTML = filtered.map(function(e) {
+    var permsHtml = (e.perms||'').split(',').filter(Boolean).map(function(p) {
+      return '<span class="badge badge-other" style="margin:1px;font-size:10px">'+(permLabels[p.trim()]||p.trim())+'</span>';
+    }).join('');
+    var roleColor = e.role === 'admin' ? 'role-admin' : 'role-employee';
+    return '<tr>'+
+      '<td style="font-weight:500">'+e.name+'</td>'+
+      '<td class="muted" style="font-size:12px">'+e.email+'</td>'+
+      '<td><span class="badge '+(tClass[e.team]||'badge-other')+'">'+e.team+'</span></td>'+
+      '<td><span class="role-badge '+roleColor+'">'+e.role+'</span></td>'+
+      '<td>'+permsHtml+'</td>'+
+      '<td>'+
+        (e.role !== 'admin' ? '<button class="action-btn approve" onclick="toggleRole(\''+e.email+'\',\'admin\')" title="Make Admin">↑ Admin</button>' :
+          '<button class="action-btn" onclick="toggleRole(\''+e.email+'\',\'employee\')" title="Demote">↓ Employee</button>')+
+        ' <button class="action-btn" onclick="editPermissions(\''+e.email+'\')" title="Edit permissions">✏️</button>'+
+        ' <button class="action-btn reject" onclick="removeEmployee(\''+e.email+'\')" title="Remove">×</button>'+
+      '</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function addEmployee() {
+  var name = document.getElementById('emp-add-name').value.trim();
+  var email = document.getElementById('emp-add-email').value.trim().toLowerCase();
+  var team = document.getElementById('emp-add-team').value;
+  var role = document.getElementById('emp-add-role').value;
+  if (!name || !email) { showToast('Please enter name and email',true); return; }
+  if (!email.endsWith('@bsharpcorp.com')) { showToast('Only @bsharpcorp.com emails allowed',true); return; }
+  if (EMPLOYEE_MAP[email]) { showToast('This email already exists',true); return; }
+
+  var perms = [];
+  if (document.getElementById('emp-perm-submit').checked) perms.push('submit');
+  if (document.getElementById('emp-perm-mysubs').checked) perms.push('mysubs');
+  if (document.getElementById('emp-perm-expenses').checked) perms.push('expenses');
+  if (document.getElementById('emp-perm-dashboard').checked) perms.push('dashboard');
+  if (document.getElementById('emp-perm-report').checked) perms.push('report');
+
+  var newEmp = { email: email, name: name, team: team, role: role, perms: perms.join(',') };
+  employeeList.push(newEmp);
+  buildEmployeeMaps();
+  saveEmployeesToSheet();
+  populateEmployeeDropdowns();
+
+  document.getElementById('emp-add-name').value = '';
+  document.getElementById('emp-add-email').value = '';
+  logAudit('status', '<strong>'+currentUser.name+'</strong> added employee: '+name+' ('+email+')');
+  showToast('✓ '+name+' added');
+  renderEmployeeManager();
+}
+
+function removeEmployee(email) {
+  var emp = EMPLOYEE_MAP[email];
+  if (!emp) return;
+  if (!confirm('Remove '+emp.name+' ('+email+')? They will no longer be able to log in.')) return;
+  employeeList = employeeList.filter(function(e){ return e.email !== email; });
+  buildEmployeeMaps();
+  saveEmployeesToSheet();
+  populateEmployeeDropdowns();
+  logAudit('status', '<strong>'+currentUser.name+'</strong> removed employee: '+emp.name);
+  showToast('✓ '+emp.name+' removed');
+  renderEmployeeManager();
+}
+
+function toggleRole(email, newRole) {
+  for (var i = 0; i < employeeList.length; i++) {
+    if (employeeList[i].email === email) {
+      employeeList[i].role = newRole;
+      break;
+    }
+  }
+  buildEmployeeMaps();
+  saveEmployeesToSheet();
+  var emp = EMPLOYEE_MAP[email];
+  logAudit('status', '<strong>'+currentUser.name+'</strong> changed '+emp.name+' role to <strong>'+newRole+'</strong>');
+  showToast('✓ '+emp.name+' is now '+newRole);
+  renderEmployeeManager();
+}
+
+function editPermissions(email) {
+  var emp = employeeList.find(function(e){ return e.email === email; });
+  if (!emp) return;
+  var allPerms = ['submit','mysubs','expenses','dashboard','report'];
+  var permLabels = {'submit':'Submit Log','mysubs':'My Submissions','expenses':'Expenses','dashboard':'Dashboard (read-only)','report':'Weekly Report (read-only)'};
+  var currentPerms = (emp.perms||'').split(',');
+  var msg = 'Set permissions for '+emp.name+':\n\n';
+  allPerms.forEach(function(p,i){ msg += (i+1)+'. '+permLabels[p]+': '+(currentPerms.indexOf(p)!==-1?'ON':'OFF')+'\n'; });
+  msg += '\nEnter permission numbers to TOGGLE (comma-separated, e.g. "4,5"):';
+  var input = prompt(msg);
+  if (!input) return;
+  var toggles = input.split(',').map(function(n){ return parseInt(n.trim())-1; });
+  toggles.forEach(function(idx) {
+    if (idx >= 0 && idx < allPerms.length) {
+      var p = allPerms[idx];
+      if (currentPerms.indexOf(p) !== -1) currentPerms = currentPerms.filter(function(x){ return x !== p; });
+      else currentPerms.push(p);
+    }
+  });
+  emp.perms = currentPerms.filter(Boolean).join(',');
+  buildEmployeeMaps();
+  saveEmployeesToSheet();
+  logAudit('status', '<strong>'+currentUser.name+'</strong> updated permissions for '+emp.name+': '+emp.perms);
+  showToast('✓ Permissions updated for '+emp.name);
+  renderEmployeeManager();
+}
+
+function saveEmployeesToSheet() {
+  var rows = employeeList.map(function(e) {
+    return [e.email, e.name, e.team, e.role, e.perms];
+  });
+  fetch(SCRIPT_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: {'Content-Type':'text/plain'},
+    body: JSON.stringify({ action: 'saveEmployees', rows: rows })
+  });
+  // Also update local cache
+  localStorage.setItem('wl_emp_cache', JSON.stringify(employeeList));
+}
+
 // ============================================================
 // GOALS / KPI TRACKER
 // ============================================================
