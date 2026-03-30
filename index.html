@@ -989,7 +989,8 @@ async function checkExistingLogin() {
     if (saved && saved.email && saved.expires && Date.now() < saved.expires) {
       var emp = EMPLOYEE_MAP[saved.email];
       if (emp) {
-        currentUser = { email: saved.email, name: emp.name, team: emp.team, isAdmin: emp.role === 'admin', perms: emp.perms || 'submit,mysubs,expenses' };
+        var isAdmin = emp.role === 'admin';
+        currentUser = { email: saved.email, name: emp.name, team: emp.team, isAdmin: isAdmin, perms: isAdmin ? 'submit,mysubs,expenses,dashboard,report' : (emp.perms || 'submit,mysubs,expenses') };
       } else {
         currentUser = { email: saved.email, name: saved.name, team: saved.team, isAdmin: false, perms: 'submit,mysubs,expenses' };
       }
@@ -1104,7 +1105,8 @@ function verifyOTP() {
   if (code !== generatedOTP) { errEl.textContent = 'Invalid code. Please check and try again.'; return; }
 
   var emp = EMPLOYEE_MAP[pendingOTPEmail];
-  currentUser = { email: pendingOTPEmail, name: emp.name, team: emp.team, isAdmin: emp.role === 'admin', perms: emp.perms || 'submit,mysubs,expenses' };
+  var isAdmin = emp.role === 'admin';
+  currentUser = { email: pendingOTPEmail, name: emp.name, team: emp.team, isAdmin: isAdmin, perms: isAdmin ? 'submit,mysubs,expenses,dashboard,report' : (emp.perms || 'submit,mysubs,expenses') };
   localStorage.setItem('wl_login', JSON.stringify({
     email: pendingOTPEmail, name: emp.name, team: emp.team,
     expires: Date.now() + (7 * 24 * 60 * 60 * 1000)
@@ -2249,6 +2251,10 @@ function toggleRole(email, newRole) {
   for (var i = 0; i < employeeList.length; i++) {
     if (employeeList[i].email === email) {
       employeeList[i].role = newRole;
+      // Admins get all permissions automatically
+      if (newRole === 'admin') {
+        employeeList[i].perms = 'submit,mysubs,expenses,dashboard,report';
+      }
       break;
     }
   }
