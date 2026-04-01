@@ -396,6 +396,12 @@ tbody td.muted{color:var(--text2)}
     <div id="not-submitted-grid" class="emp-grid"><span class="spinner"></span></div>
   </div>
 
+  <!-- Yesterday's submission status -->
+  <div class="card" id="yesterday-card">
+    <div class="card-title"><div class="card-title-icon">📋</div> Yesterday's submission status</div>
+    <div id="yesterday-grid" class="emp-grid"><span class="spinner"></span></div>
+  </div>
+
   <div class="metric-grid" id="metric-grid">
     <div class="metric-card"><div class="metric-label">Total hours</div><div class="metric-value">—</div></div>
     <div class="metric-card"><div class="metric-label">Employees logged</div><div class="metric-value">—</div></div>
@@ -1378,6 +1384,26 @@ function renderNotSubmitted() {
   var grid = document.getElementById('not-submitted-grid');
   grid.innerHTML = ALL_EMPLOYEES.map(function(emp){
     var present = submittedToday.has(emp);
+    return '<div class="emp-chip '+(present?'present':'missing')+'">'+
+      '<div class="emp-chip-dot"></div>'+
+      '<span style="font-size:12px">'+emp+'</span>'+
+    '</div>';
+  }).join('');
+
+  // Yesterday's status
+  var yesterday = new Date();
+  // Skip weekends — go to last working day
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (yesterday.getDay() === 0) yesterday.setDate(yesterday.getDate() - 2); // Sunday → Friday
+  if (yesterday.getDay() === 6) yesterday.setDate(yesterday.getDate() - 1); // Saturday → Friday
+  var yesterdayStr = toISO(yesterday);
+  var yesterdayLabel = yesterday.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
+
+  var submittedYesterday = new Set(dashAllRows.filter(function(r){ return toISO(toDateObj(r[0]))===yesterdayStr; }).map(function(r){ return r[2]; }));
+  var yGrid = document.getElementById('yesterday-grid');
+  document.querySelector('#yesterday-card .card-title').innerHTML = '<div class="card-title-icon">📋</div> ' + yesterdayLabel + ' — submission status';
+  yGrid.innerHTML = ALL_EMPLOYEES.map(function(emp){
+    var present = submittedYesterday.has(emp);
     return '<div class="emp-chip '+(present?'present':'missing')+'">'+
       '<div class="emp-chip-dot"></div>'+
       '<span style="font-size:12px">'+emp+'</span>'+
