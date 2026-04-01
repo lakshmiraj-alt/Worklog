@@ -2139,8 +2139,69 @@ async function renderExpenseAdmin() {
   }).join('');
 }
 
+function renderExpenseAdminFromData() {
+  var tbody = document.getElementById('exp-admin-tbody');
+  var empty = document.getElementById('exp-admin-empty');
+  var statusF = (document.getElementById('exp-filter-status')||{}).value || '';
+  var empF = (document.getElementById('exp-filter-emp')||{}).value || '';
+  var filtered = expenseData.filter(function(e) {
+    if (statusF && e.status !== statusF) return false;
+    if (empF && e.employee !== empF) return false;
+    return true;
+  }).sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+
+  var pending = expenseData.filter(function(e){ return e.status === 'Pending'; });
+  var approved = expenseData.filter(function(e){ return e.status === 'Approved' || e.status === 'Paid'; });
+  var totalAmt = expenseData.reduce(function(s,e){ return s+e.amount; },0);
+  document.getElementById('exp-admin-metrics').innerHTML =
+    '<div class="metric-card danger"><div class="metric-label">Pending</div><div class="metric-value">'+pending.length+'</div><div class="metric-sub">claims to review</div></div>'+
+    '<div class="metric-card success"><div class="metric-label">Approved / Paid</div><div class="metric-value">'+approved.length+'</div><div class="metric-sub">claims processed</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Total amount</div><div class="metric-value">₹'+totalAmt.toLocaleString('en-IN')+'</div><div class="metric-sub">all claims</div></div>';
+
+  var statusClass = {'Pending':'status-pending','Approved':'status-approved','Paid':'status-paid','Rejected':'status-rejected'};
+  var tClass = {'Technical':'badge-tech','Customer Success':'badge-cs','Marketing':'badge-mkt'};
+  var tShort = {'Technical':'Tech','Customer Success':'CS','Marketing':'Mktg','Director':'Dir','Admin':'Admin'};
+  if (filtered.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = filtered.map(function(e) {
+    var actions = '';
+    if (e.status === 'Pending') {
+      actions = '<button class="action-btn approve" onclick="updateExpenseStatus(\''+e.id+'\',\'Approved\')">Approve</button>'+
+                '<button class="action-btn reject" onclick="updateExpenseStatus(\''+e.id+'\',\'Rejected\')">Reject</button>';
+    } else if (e.status === 'Approved') {
+      actions = '<button class="action-btn paid" onclick="updateExpenseStatus(\''+e.id+'\',\'Paid\')">Mark Paid</button>'+
+                '<button class="action-btn reject" onclick="updateExpenseStatus(\''+e.id+'\',\'Rejected\')">Reject</button>';
+    } else {
+      actions = '<span style="color:var(--text3);font-size:11px">—</span>';
+    }
+    var attachHtml = e.attachment ? '<a class="attach-link" onclick="viewAttachment(\''+e.id+'\')">📎 '+(e.attachName||'View')+'</a>' : '<span style="color:var(--text3);font-size:12px">—</span>';
+    return '<tr>'+
+      '<td class="muted">'+fmtDate(e.date)+'</td>'+
+      '<td style="font-weight:500">'+e.employee+'</td>'+
+      '<td><span class="badge '+(tClass[e.team]||'badge-other')+'">'+(tShort[e.team]||e.team)+'</span></td>'+
+      '<td>'+e.category+'</td>'+
+      '<td style="font-weight:600">₹'+e.amount.toLocaleString('en-IN')+'</td>'+
+      '<td class="muted" style="max-width:160px">'+e.reason+'</td>'+
+      '<td>'+attachHtml+'</td>'+
+      '<td><span class="badge '+(statusClass[e.status]||'badge-other')+'">'+e.status+'</span></td>'+
+      '<td>'+actions+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
 async function updateExpenseStatus(id, newStatus) {
   try {
+    // Immediately update local data so UI reflects the change
+    for (var i = 0; i < expenseData.length; i++) {
+      if (String(expenseData[i].id) === String(id)) {
+        expenseData[i].status = newStatus;
+        break;
+      }
+    }
+    // Re-render immediately with local data
+    renderExpenseAdminFromData();
+
+    // Then send to sheet in background
     await fetch(SCRIPT_URL, {
       method: 'POST', mode: 'no-cors',
       headers: {'Content-Type':'text/plain'},
@@ -2148,7 +2209,8 @@ async function updateExpenseStatus(id, newStatus) {
     });
     showToast('✓ Expense marked as ' + newStatus);
     logAudit('status', '<strong>' + currentUser.name + '</strong> marked expense as <strong>' + newStatus + '</strong>');
-    setTimeout(function(){ renderExpenseAdmin(); }, 1500);
+    // Clear cache so next full fetch gets fresh data
+    localStorage.removeItem('wl_exp_cache');
   } catch(e) { showToast('Error updating status',true); }
 }
 
