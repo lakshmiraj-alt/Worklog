@@ -169,6 +169,34 @@ tbody td.muted{color:var(--text2)}
 .audit-text strong{font-weight:600}
 /* Email Digest */
 .digest-config{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+/* Notes */
+.notes-sidebar{display:flex;gap:1rem;min-height:500px}
+.notes-list-panel{width:280px;flex-shrink:0;border-right:1px solid var(--border);padding-right:1rem}
+.notes-editor-panel{flex:1;min-width:0}
+.note-item{padding:10px 12px;border-radius:var(--radius);cursor:pointer;margin-bottom:4px;transition:background .1s;border:1px solid transparent}
+.note-item:hover{background:var(--surface2)}
+.note-item.active{background:var(--accent-light);border-color:var(--accent)}
+.note-item-title{font-weight:600;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note-item-meta{font-size:11px;color:var(--text3);margin-top:2px;display:flex;gap:8px}
+.note-item-preview{font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note-tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.note-tag{padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;background:var(--surface2);color:var(--text2)}
+.note-tag.product{background:var(--tech-bg);color:var(--tech)}
+.note-tag.feature{background:var(--cs-bg);color:var(--cs)}
+.note-tag.sprint{background:var(--accent-light);color:var(--accent)}
+.note-editor{border:1px solid var(--border);border-radius:var(--radius);min-height:350px;padding:12px;font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.7;color:var(--text);outline:none;background:var(--surface);overflow-y:auto}
+.note-editor:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(196,82,26,.12)}
+.note-editor img{max-width:100%;border-radius:8px;margin:8px 0}
+.note-toolbar{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.note-toolbar button{padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:13px;color:var(--text2);transition:all .1s;font-family:'DM Sans',sans-serif}
+.note-toolbar button:hover{background:var(--surface2);color:var(--text)}
+.note-toolbar button.active{background:var(--accent-light);color:var(--accent);border-color:var(--accent)}
+.note-search{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px;margin-bottom:8px;outline:none}
+.note-search:focus{border-color:var(--accent)}
+@media(max-width:768px){
+  .notes-sidebar{flex-direction:column;min-height:auto}
+  .notes-list-panel{width:100%;border-right:none;border-bottom:1px solid var(--border);padding-right:0;padding-bottom:1rem;max-height:200px;overflow-y:auto}
+}
 /* Login overlay */
 .login-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center}
 .login-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2.5rem;max-width:400px;width:90%;box-shadow:var(--shadow);text-align:center}
@@ -645,6 +673,53 @@ tbody td.muted{color:var(--text2)}
         <tbody id="exp-admin-tbody"></tbody>
       </table>
       <div class="empty-state" id="exp-admin-empty" style="display:none">No expense claims found.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NOTES (Everyone) ===== -->
+<div class="page" id="page-notes">
+  <div style="margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">Notes</div>
+      <div style="color:var(--text2);font-size:13.5px">Organize notes by Product, Feature, and Sprint. Paste images directly.</div>
+    </div>
+    <button class="submit-btn" style="width:auto;padding:9px 20px" onclick="createNewNote()">+ New Note</button>
+  </div>
+  <div class="card" style="padding:1rem">
+    <div class="notes-sidebar">
+      <!-- Left: Note list -->
+      <div class="notes-list-panel">
+        <input type="text" class="note-search" id="note-search" placeholder="Search notes..." oninput="renderNotesList()"/>
+        <div id="notes-list-container">
+          <div class="empty-state" style="padding:1rem">No notes yet. Click + New Note.</div>
+        </div>
+      </div>
+      <!-- Right: Editor -->
+      <div class="notes-editor-panel" id="notes-editor-panel" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <input type="text" id="note-product" placeholder="Product" style="flex:1;min-width:100px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px"/>
+          <input type="text" id="note-feature" placeholder="Feature" style="flex:1;min-width:100px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px"/>
+          <input type="text" id="note-sprint" placeholder="Sprint" style="flex:1;min-width:80px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px"/>
+        </div>
+        <input type="text" id="note-title" placeholder="Note title..." style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;margin-bottom:8px;outline:none"/>
+        <div class="note-toolbar">
+          <button onclick="noteCmd('bold')" title="Bold"><strong>B</strong></button>
+          <button onclick="noteCmd('italic')" title="Italic"><em>I</em></button>
+          <button onclick="noteCmd('underline')" title="Underline"><u>U</u></button>
+          <button onclick="noteCmd('insertUnorderedList')" title="Bullet list">• List</button>
+          <button onclick="noteCmd('insertOrderedList')" title="Numbered list">1. List</button>
+          <button onclick="noteCmd('formatBlock','H3')" title="Heading">H</button>
+          <button onclick="insertNoteImage()" title="Insert image">🖼 Image</button>
+          <input type="file" id="note-image-input" accept="image/*" style="display:none" onchange="handleNoteImage(event)"/>
+        </div>
+        <div class="note-editor" id="note-editor" contenteditable="true" onpaste="handleNotePaste(event)"></div>
+        <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+          <button class="submit-btn" style="width:auto;padding:9px 20px" onclick="saveCurrentNote()">Save Note</button>
+          <button onclick="deleteCurrentNote()" style="padding:9px 16px;border:1px solid var(--red);border-radius:var(--radius-lg);background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--red)">Delete</button>
+          <span id="note-save-status" style="font-size:12px;color:var(--text3);margin-left:auto"></span>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1182,6 +1257,7 @@ function buildNavTabs() {
   if (perms.indexOf('submit') !== -1) html += navBtn('submit', '📝', 'Submit Log', true);
   if (perms.indexOf('mysubs') !== -1) html += navBtn('mysubs', '📋', 'My Submissions');
   if (perms.indexOf('expenses') !== -1) html += navBtn('expenses', '💰', 'Expenses');
+  html += navBtn('notes', '📓', 'Notes');
   if (perms.indexOf('dashboard') !== -1 && !currentUser.isAdmin) html += navBtn('dashboard', '📊', 'Dashboard');
   if (perms.indexOf('report') !== -1 && !currentUser.isAdmin) html += navBtn('report', '📈', 'Weekly Report');
   // Admin section
@@ -1728,12 +1804,211 @@ function doSwitchPage(page,btn) {
   if (page==='leave') { renderLeaveTable(); renderLeaveMetrics(); }
   if (page==='mysubs') renderMySubmissions();
   if (page==='expenses') renderMyExpenses();
+  if (page==='notes') renderNotesList();
   if (page==='expmanage') renderExpenseAdmin();
   if (page==='goals') renderGoals();
   if (page==='employees') renderEmployeeManager();
   if (page==='audit') renderAuditLog();
   if (page==='digest') loadDigestPage();
   if (page==='settings') loadSettingsPage();
+}
+
+// ============================================================
+// NOTES (OneNote-like)
+// ============================================================
+var notesData = JSON.parse(localStorage.getItem('wl_notes') || '[]');
+var currentNoteId = null;
+var _notesLastFetched = 0;
+
+function saveNotesLocal() { localStorage.setItem('wl_notes', JSON.stringify(notesData)); }
+
+function fetchNotes() {
+  return new Promise(function(resolve) {
+    if (notesData.length > 0 && Date.now() - _notesLastFetched < CACHE_TTL) {
+      resolve(notesData); return;
+    }
+    var cb = 'notes_' + Date.now();
+    var script = document.createElement('script');
+    var done = false;
+    var timer = setTimeout(function() {
+      if (done) return; done = true; cleanup();
+      resolve(notesData);
+    }, 10000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e){}
+      try { if (script.parentNode) script.parentNode.removeChild(script); } catch(e){}
+    }
+    window[cb] = function(data) {
+      if (done) return; done = true; cleanup();
+      if (data && data.status === 'ok' && data.data && data.data.length > 0) {
+        notesData = data.data.map(function(r) {
+          return { id: String(r[0]||''), title: String(r[1]||''), product: String(r[2]||''), feature: String(r[3]||''), sprint: String(r[4]||''), content: String(r[5]||''), author: String(r[6]||''), updated: String(r[7]||'') };
+        });
+        _notesLastFetched = Date.now();
+        saveNotesLocal();
+        resolve(notesData);
+      } else { resolve(notesData); }
+    };
+    script.src = SCRIPT_URL + '?sheet=Notes&callback=' + cb + '&t=' + Date.now();
+    script.onerror = function() { if (done) return; done = true; cleanup(); resolve(notesData); };
+    document.head.appendChild(script);
+  });
+}
+
+function saveNoteToSheet(note) {
+  var row = [note.id, note.title, note.product, note.feature, note.sprint, note.content, note.author, note.updated];
+  fetch(SCRIPT_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: {'Content-Type':'text/plain'},
+    body: JSON.stringify({ action: 'saveNote', note: row })
+  });
+}
+
+function deleteNoteFromSheet(noteId) {
+  fetch(SCRIPT_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: {'Content-Type':'text/plain'},
+    body: JSON.stringify({ action: 'deleteNote', id: String(noteId) })
+  });
+}
+
+async function renderNotesList() {
+  try { notesData = await fetchNotes(); } catch(e){}
+  var search = (document.getElementById('note-search')||{}).value || '';
+  search = search.toLowerCase();
+  var filtered = notesData.filter(function(n) {
+    if (!search) return true;
+    return (n.title||'').toLowerCase().indexOf(search) !== -1 ||
+           (n.product||'').toLowerCase().indexOf(search) !== -1 ||
+           (n.feature||'').toLowerCase().indexOf(search) !== -1 ||
+           (n.sprint||'').toLowerCase().indexOf(search) !== -1 ||
+           (n.content||'').toLowerCase().indexOf(search) !== -1;
+  }).sort(function(a,b) { return (b.updated||'').localeCompare(a.updated||''); });
+
+  var container = document.getElementById('notes-list-container');
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-state" style="padding:1rem">' + (search ? 'No notes matching "'+search+'"' : 'No notes yet. Click + New Note.') + '</div>';
+    return;
+  }
+  container.innerHTML = filtered.map(function(n) {
+    var tags = '';
+    if (n.product) tags += '<span class="note-tag product">'+n.product+'</span>';
+    if (n.feature) tags += '<span class="note-tag feature">'+n.feature+'</span>';
+    if (n.sprint) tags += '<span class="note-tag sprint">'+n.sprint+'</span>';
+    var preview = (n.content||'').replace(/<[^>]*>/g,'').substring(0,60);
+    return '<div class="note-item'+(currentNoteId===n.id?' active':'')+'" onclick="openNote(\''+n.id+'\')">'+
+      '<div class="note-item-title">'+(n.title||'Untitled')+'</div>'+
+      (tags?'<div class="note-tags" style="margin-top:4px">'+tags+'</div>':'')+
+      '<div class="note-item-preview">'+preview+'</div>'+
+      '<div class="note-item-meta"><span>'+( n.author||'')+'</span><span>'+(n.updated?fmtDate(n.updated):'')+'</span></div>'+
+    '</div>';
+  }).join('');
+}
+
+function createNewNote() {
+  var id = String(Date.now());
+  var note = { id: id, title: '', product: '', feature: '', sprint: '', content: '', author: currentUser.name, updated: todayISO() };
+  notesData.unshift(note);
+  currentNoteId = id;
+  saveNotesLocal();
+  openNote(id);
+  renderNotesList();
+  document.getElementById('note-title').focus();
+}
+
+function openNote(id) {
+  var note = notesData.find(function(n){ return n.id === id; });
+  if (!note) return;
+  currentNoteId = id;
+  document.getElementById('notes-editor-panel').style.display = 'block';
+  document.getElementById('note-title').value = note.title || '';
+  document.getElementById('note-product').value = note.product || '';
+  document.getElementById('note-feature').value = note.feature || '';
+  document.getElementById('note-sprint').value = note.sprint || '';
+  document.getElementById('note-editor').innerHTML = note.content || '';
+  document.getElementById('note-save-status').textContent = note.updated ? 'Last saved: ' + fmtDate(note.updated) : '';
+  // Update active state in list
+  document.querySelectorAll('.note-item').forEach(function(el){ el.classList.remove('active'); });
+  var items = document.querySelectorAll('.note-item');
+  items.forEach(function(el) {
+    if (el.onclick && el.onclick.toString().indexOf(id) !== -1) el.classList.add('active');
+  });
+  renderNotesList();
+}
+
+function saveCurrentNote() {
+  if (!currentNoteId) return;
+  var note = notesData.find(function(n){ return n.id === currentNoteId; });
+  if (!note) return;
+  note.title = document.getElementById('note-title').value.trim() || 'Untitled';
+  note.product = document.getElementById('note-product').value.trim();
+  note.feature = document.getElementById('note-feature').value.trim();
+  note.sprint = document.getElementById('note-sprint').value.trim();
+  note.content = document.getElementById('note-editor').innerHTML;
+  note.author = currentUser.name;
+  note.updated = todayISO();
+  saveNotesLocal();
+  saveNoteToSheet(note);
+  _notesLastFetched = 0;
+  document.getElementById('note-save-status').innerHTML = '<span style="color:var(--cs)">✓ Saved</span>';
+  logAudit('log', '<strong>'+currentUser.name+'</strong> saved note: '+note.title);
+  showToast('✓ Note saved');
+  renderNotesList();
+}
+
+function deleteCurrentNote() {
+  if (!currentNoteId) return;
+  var note = notesData.find(function(n){ return n.id === currentNoteId; });
+  if (!note) return;
+  if (!confirm('Delete "' + (note.title||'Untitled') + '"?')) return;
+  notesData = notesData.filter(function(n){ return n.id !== currentNoteId; });
+  deleteNoteFromSheet(currentNoteId);
+  saveNotesLocal();
+  _notesLastFetched = 0;
+  currentNoteId = null;
+  document.getElementById('notes-editor-panel').style.display = 'none';
+  logAudit('log', '<strong>'+currentUser.name+'</strong> deleted note: '+(note.title||'Untitled'));
+  showToast('Note deleted');
+  renderNotesList();
+}
+
+function noteCmd(cmd, val) {
+  document.execCommand(cmd, false, val || null);
+  document.getElementById('note-editor').focus();
+}
+
+function insertNoteImage() {
+  document.getElementById('note-image-input').click();
+}
+
+function handleNoteImage(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 500000) { showToast('Image too large. Max 500KB.',true); return; }
+  var reader = new FileReader();
+  reader.onload = function() {
+    document.execCommand('insertImage', false, reader.result);
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function handleNotePaste(event) {
+  var items = (event.clipboardData || event.originalEvent.clipboardData).items;
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1) {
+      event.preventDefault();
+      var file = items[i].getAsFile();
+      if (file.size > 500000) { showToast('Pasted image too large (max 500KB)',true); return; }
+      var reader = new FileReader();
+      reader.onload = function() {
+        document.execCommand('insertImage', false, reader.result);
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+  }
 }
 
 // ============================================================
