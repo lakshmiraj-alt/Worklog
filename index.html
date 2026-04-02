@@ -969,6 +969,7 @@ function detectProvider(key) {
 const EMAILJS_PUBLIC_KEY = 'RlPyRj-3noMB8beie';
 const EMAILJS_SERVICE_ID = 'service_gcq161p';
 const EMAILJS_TEMPLATE_ID = 'template_w0wosp2';
+const EMAILJS_REMINDER_TEMPLATE_ID = 'template_l3x75va';
 
 let dashAllRows = [];
 let dashWeekOffset = 0;
@@ -2810,10 +2811,11 @@ async function checkAndSendReminders() {
     for (var i = 0; i < missing.length; i++) {
       var emp = missing[i];
       try {
-        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_REMINDER_TEMPLATE_ID, {
           to_email: emp.email,
           to_name: emp.name,
-          otp_code: '⏰ REMINDER: You did not submit your WorkLog for ' + yesterdayLabel + '.\n\nPlease submit your daily work log as soon as possible.\n\n🔗 Open WorkLog: https://lakshmiraj-alt.github.io/Worklog/\n\nIf you were on leave, please ignore this reminder.\n\n— HR Team, BSharp Corp'
+          missed_date: yesterdayLabel,
+          app_link: 'https://lakshmiraj-alt.github.io/Worklog/'
         });
         sent++;
         // Small delay to avoid rate limiting
