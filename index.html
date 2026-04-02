@@ -697,10 +697,34 @@ tbody td.muted{color:var(--text2)}
       </div>
       <!-- Right: Editor -->
       <div class="notes-editor-panel" id="notes-editor-panel" style="display:none">
-        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-          <input type="text" id="note-product" placeholder="Product" style="flex:1;min-width:100px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px"/>
-          <input type="text" id="note-feature" placeholder="Feature" style="flex:1;min-width:100px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px"/>
-          <input type="text" id="note-sprint" placeholder="Sprint" style="flex:1;min-width:80px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px"/>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:end">
+          <div class="field" style="flex:1;min-width:100px;margin:0">
+            <label>Product</label>
+            <div style="display:flex;gap:4px">
+              <select id="note-product" style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px">
+                <option value="">— Select —</option>
+              </select>
+              <button onclick="addDropdownOption('product')" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:14px;color:var(--accent)" title="Add new product">+</button>
+            </div>
+          </div>
+          <div class="field" style="flex:1;min-width:100px;margin:0">
+            <label>Feature</label>
+            <div style="display:flex;gap:4px">
+              <select id="note-feature" style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px">
+                <option value="">— Select —</option>
+              </select>
+              <button onclick="addDropdownOption('feature')" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:14px;color:var(--accent)" title="Add new feature">+</button>
+            </div>
+          </div>
+          <div class="field" style="flex:1;min-width:80px;margin:0">
+            <label>Sprint</label>
+            <div style="display:flex;gap:4px">
+              <select id="note-sprint" style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px">
+                <option value="">— Select —</option>
+              </select>
+              <button onclick="addDropdownOption('sprint')" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:14px;color:var(--accent)" title="Add new sprint">+</button>
+            </div>
+          </div>
         </div>
         <input type="text" id="note-title" placeholder="Note title..." style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;margin-bottom:8px;outline:none"/>
         <div class="note-toolbar">
@@ -1820,6 +1844,74 @@ var notesData = JSON.parse(localStorage.getItem('wl_notes') || '[]');
 var currentNoteId = null;
 var _notesLastFetched = 0;
 
+// Dropdown options for Product, Feature, Sprint
+var noteDropdownDefaults = {"product":["Converse"],"feature":["Instant Answers","Smart Coach","Daily Learning","Forms","Content","Learning Pathway","Content Authoring","AI Reports"],"sprint":[]};
+var noteDropdowns = JSON.parse(localStorage.getItem('wl_note_dropdowns') || 'null');
+if (!noteDropdowns || (!noteDropdowns.product || noteDropdowns.product.length === 0)) {
+  noteDropdowns = noteDropdownDefaults;
+  localStorage.setItem('wl_note_dropdowns', JSON.stringify(noteDropdowns));
+}
+
+function saveNoteDropdowns() {
+  localStorage.setItem('wl_note_dropdowns', JSON.stringify(noteDropdowns));
+  // Also save to Google Sheet for sharing
+  fetch(SCRIPT_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: {'Content-Type':'text/plain'},
+    body: JSON.stringify({ action: 'saveNoteDropdowns', data: noteDropdowns })
+  });
+}
+
+function loadNoteDropdowns() {
+  // Try to load from sheet
+  var cb = 'ndd_' + Date.now();
+  var script = document.createElement('script');
+  var done = false;
+  var timer = setTimeout(function() { if (done) return; done = true; cleanup(); }, 5000);
+  function cleanup() { clearTimeout(timer); try { delete window[cb]; } catch(e){} try { if (script.parentNode) script.parentNode.removeChild(script); } catch(e){} }
+  window[cb] = function(data) {
+    if (done) return; done = true; cleanup();
+    if (data && data.status === 'ok' && data.data && data.data.length > 0) {
+      try {
+        var parsed = JSON.parse(data.data[0][0]);
+        if (parsed.product) { noteDropdowns = parsed; localStorage.setItem('wl_note_dropdowns', JSON.stringify(noteDropdowns)); }
+      } catch(e){}
+    }
+    populateNoteDropdowns();
+  };
+  script.src = SCRIPT_URL + '?sheet=NoteDropdowns&callback=' + cb + '&t=' + Date.now();
+  script.onerror = function() { if (done) return; done = true; cleanup(); populateNoteDropdowns(); };
+  document.head.appendChild(script);
+}
+
+function populateNoteDropdowns() {
+  ['product','feature','sprint'].forEach(function(type) {
+    var sel = document.getElementById('note-' + type);
+    if (!sel) return;
+    var currentVal = sel.value;
+    var options = noteDropdowns[type] || [];
+    sel.innerHTML = '<option value="">— Select —</option>' + options.map(function(o) {
+      return '<option value="'+o+'"'+(o===currentVal?' selected':'')+'>'+o+'</option>';
+    }).join('');
+  });
+}
+
+function addDropdownOption(type) {
+  var labels = { product: 'Product', feature: 'Feature', sprint: 'Sprint' };
+  var name = prompt('Enter new ' + labels[type] + ' name:');
+  if (!name || !name.trim()) return;
+  name = name.trim();
+  if (!noteDropdowns[type]) noteDropdowns[type] = [];
+  if (noteDropdowns[type].indexOf(name) !== -1) { showToast(name + ' already exists',true); return; }
+  noteDropdowns[type].push(name);
+  noteDropdowns[type].sort();
+  saveNoteDropdowns();
+  populateNoteDropdowns();
+  // Auto-select the new option
+  document.getElementById('note-' + type).value = name;
+  showToast('✓ ' + labels[type] + ' "' + name + '" added');
+}
+
 function saveNotesLocal() { localStorage.setItem('wl_notes', JSON.stringify(notesData)); }
 
 function fetchNotes() {
@@ -1875,6 +1967,7 @@ function deleteNoteFromSheet(noteId) {
 
 async function renderNotesList() {
   try { notesData = await fetchNotes(); } catch(e){}
+  loadNoteDropdowns();
   var search = (document.getElementById('note-search')||{}).value || '';
   search = search.toLowerCase();
   var filtered = notesData.filter(function(n) {
@@ -1923,9 +2016,17 @@ function openNote(id) {
   currentNoteId = id;
   document.getElementById('notes-editor-panel').style.display = 'block';
   document.getElementById('note-title').value = note.title || '';
-  document.getElementById('note-product').value = note.product || '';
-  document.getElementById('note-feature').value = note.feature || '';
-  document.getElementById('note-sprint').value = note.sprint || '';
+  // Set dropdown values — add option if it doesn't exist
+  ['product','feature','sprint'].forEach(function(type) {
+    var val = note[type] || '';
+    if (val && noteDropdowns[type] && noteDropdowns[type].indexOf(val) === -1) {
+      noteDropdowns[type].push(val);
+      noteDropdowns[type].sort();
+      saveNoteDropdowns();
+    }
+    populateNoteDropdowns();
+    document.getElementById('note-' + type).value = val;
+  });
   document.getElementById('note-editor').innerHTML = note.content || '';
   document.getElementById('note-save-status').textContent = note.updated ? 'Last saved: ' + fmtDate(note.updated) : '';
   // Update active state in list
