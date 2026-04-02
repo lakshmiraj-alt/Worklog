@@ -1160,7 +1160,10 @@ function applyLogin() {
     if (nameSelect.options[i].text === currentUser.name) { nameSelect.selectedIndex = i; autoFillTeam(); break; }
   }
   buildNavTabs();
-  if (currentUser.isAdmin) populateExpenseFilters();
+  if (currentUser.isAdmin) {
+    populateExpenseFilters();
+    scheduleReminderCheck();
+  }
 }
 
 function handleLogout() {
@@ -2755,6 +2758,86 @@ window.addEventListener('load',function(){
   checkExistingLogin();
   wrapAuditHooks();
 });
+
+// ============================================================
+// AUTO DAILY REMINDER (runs when admin opens the app after 9 AM)
+// ============================================================
+async function checkAndSendReminders() {
+  if (!currentUser || !currentUser.isAdmin) return;
+
+  var now = new Date();
+  var hour = now.getHours();
+  var day = now.getDay();
+
+  // Only run on weekdays after 9 AM
+  if (day === 0 || day === 6) return;
+  if (hour < 9) return;
+
+  // Get yesterday (skip weekends)
+  var yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (yesterday.getDay() === 0) yesterday.setDate(yesterday.getDate() - 2); // Sunday → Friday
+  if (yesterday.getDay() === 6) yesterday.setDate(yesterday.getDate() - 1); // Saturday → Friday
+  var yesterdayStr = toISO(yesterday);
+  var yesterdayLabel = yesterday.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short',year:'numeric'});
+
+  // Check if reminders already sent today
+  var reminderKey = 'wl_reminder_sent_' + todayISO();
+  if (localStorage.getItem(reminderKey)) return;
+
+  // Fetch work log data
+  try {
+    var data = await fetchFromSheet();
+    var submittedYesterday = new Set(data.filter(function(r){ return toISO(toDateObj(r[0])) === yesterdayStr; }).map(function(r){ return r[2]; }));
+    var missing = [];
+
+    employeeList.forEach(function(emp) {
+      if (!submittedYesterday.has(emp.name)) {
+        missing.push(emp);
+      }
+    });
+
+    if (missing.length === 0) {
+      localStorage.setItem(reminderKey, 'all_submitted');
+      return;
+    }
+
+    // Send reminder emails via EmailJS
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    var sent = 0;
+    var failed = 0;
+
+    for (var i = 0; i < missing.length; i++) {
+      var emp = missing[i];
+      try {
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          to_email: emp.email,
+          to_name: emp.name,
+          otp_code: '⏰ REMINDER: You did not submit your WorkLog for ' + yesterdayLabel + '.\n\nPlease submit your daily work log as soon as possible.\n\n🔗 Open WorkLog: https://lakshmiraj-alt.github.io/Worklog/\n\nIf you were on leave, please ignore this reminder.\n\n— HR Team, BSharp Corp'
+        });
+        sent++;
+        // Small delay to avoid rate limiting
+        await new Promise(function(r){ setTimeout(r, 1000); });
+      } catch(e) {
+        failed++;
+      }
+    }
+
+    localStorage.setItem(reminderKey, 'sent_' + sent + '_failed_' + failed);
+    logAudit('status', '📧 Auto-reminder sent to <strong>' + sent + '</strong> employee(s) who missed log on ' + yesterdayLabel + (failed > 0 ? ' (' + failed + ' failed)' : ''));
+    showToast('📧 Reminder sent to ' + sent + ' employee(s) who missed yesterday\'s log');
+
+  } catch(e) {
+    // Silently fail — don't block the app
+  }
+}
+
+// Run reminder check 5 seconds after login (gives time for data to load)
+function scheduleReminderCheck() {
+  setTimeout(function() {
+    checkAndSendReminders();
+  }, 5000);
+}
 </script>
 </body>
 </html>
