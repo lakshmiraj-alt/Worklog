@@ -1523,7 +1523,7 @@ function fetchFromSheet() {
       var c = localStorage.getItem('wl_cache');
       if (c) { try { resolve(JSON.parse(c)); return; } catch(e){} }
       reject(new Error('Timed out. Check Apps Script deployment.'));
-    }, 12000);
+    }, 20000);
     function cleanup() {
       clearTimeout(timer);
       try { delete window[cb]; } catch(e){}
@@ -1666,14 +1666,31 @@ async function renderDashboard() {
   var r=getWeekRange(dashWeekOffset);
   var label=r.start.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' – '+r.end.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
   document.getElementById('dash-week-label').textContent=label;
-  document.getElementById('log-tbody').innerHTML='<tr class="loading-row"><td colspan="7"><span class="spinner"></span>Loading entries...</td></tr>';
+
+  // Show cached data instantly if available
+  var cached = localStorage.getItem('wl_cache');
+  if (cached && dashAllRows.length === 0) {
+    try { dashAllRows = JSON.parse(cached); } catch(e){}
+  }
+  if (dashAllRows.length > 0) {
+    renderNotSubmitted();
+    updateMetrics();
+    applyFilters();
+  } else {
+    document.getElementById('log-tbody').innerHTML='<tr class="loading-row"><td colspan="7"><span class="spinner"></span>Loading entries...</td></tr>';
+  }
+
+  // Fetch fresh data in background
   try {
+    _dataLastFetched = 0; // force fresh fetch
     dashAllRows = await fetchFromSheet();
     renderNotSubmitted();
     updateMetrics();
     applyFilters();
   } catch(e) {
-    document.getElementById('log-tbody').innerHTML='<tr class="loading-row"><td colspan="7" style="color:var(--red)">'+e.message+'</td></tr>';
+    if (dashAllRows.length === 0) {
+      document.getElementById('log-tbody').innerHTML='<tr class="loading-row"><td colspan="7" style="color:var(--red)">Could not reach server. Check your connection.</td></tr>';
+    }
   }
 }
 
