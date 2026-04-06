@@ -2827,45 +2827,151 @@ function backToContractList() {
 }
 
 function generateContractHTML(data) {
-  var featNames = {usermgmt:'User Management',instant:'Instant Answers',learnbee:'Learnbee AI Content',daily:'Daily Learning',content:'Content',pathway:'Pathway',gchat:'Integration — Google Chat',whatsapp:'Integration — WhatsApp',experimental:'Experimental Features'};
+  var featNames = {usermgmt:'User Management',instant:'Instant Answers',learnbee:'Learnbee AI Content',daily:'Daily Learning',content:'Content',pathway:'Pathway',gchat:'Integration \u2014 Google Chat',whatsapp:'Integration \u2014 WhatsApp',experimental:'Experimental Features'};
   var featRows = '';
   ['usermgmt','instant','learnbee','daily','content','pathway','gchat','whatsapp','experimental'].forEach(function(f) {
     var applicable = data.features[f] ? 'Yes' : 'No';
     var limits = data.features[f] ? (data.features[f+'_limit'] || 'No limits') : 'N/A';
-    featRows += '<tr><td>'+featNames[f]+'</td><td>'+applicable+'</td><td>'+limits+'</td></tr>';
+    featRows += '<tr><td>'+featNames[f]+'</td><td style="text-align:center">'+applicable+'</td><td>'+limits+'</td></tr>';
   });
-
-  return '<div style="font-family:\'Times New Roman\',serif;font-size:13px;line-height:1.8">'+
-    '<h1 style="text-align:center;font-size:18px">SAAS SUBSCRIPTION AGREEMENT</h1>'+
-    '<p>This SaaS Subscription Agreement ("Agreement") is made and entered into as of <strong>'+data.date+'</strong>, by and between:</p>'+
-    '<p><strong>Bsharp Sales Enablers Private Limited ("Provider")</strong>,<br>a company registered in Bangalore, India, with its principal place of business at 783, Ranka Heights, Patel Rama Reddy Layout, Domlur, Bangalore 560071.<br>PAN: AAFCB2679A | GST: 29AAFCB2679A1ZR</p>'+
-    '<p>and</p>'+
-    '<p><strong>'+data.name+' ("Customer")</strong>,<br>a business entity with its registered address at '+data.address+'.<br>'+
-    (data.pan ? 'PAN: '+data.pan : '')+(data.gst ? ' | GST: '+data.gst : '')+'<br>'+
-    'Email: '+data.email+' | Mobile: '+data.mobile+'</p>'+
-    '<hr>'+
-    '<h2>Bsharp Converse Features Applicable to the Customer</h2>'+
-    '<table><tr><th>Feature</th><th>Applicable</th><th>Limits</th></tr>'+featRows+'</table>'+
-    '<h2>Pricing Schedule for Customer</h2>'+
-    '<table>'+
-    '<tr><th>Item</th><th>Basis</th><th>Cost</th></tr>'+
-    '<tr><td>License — Bsharp Converse</td><td>Per Active User/Month</td><td>'+data.pricing.license+' per active user per month. Min guarantee: '+data.pricing.minguarantee+' users.</td></tr>'+
-    '<tr><td>Storage Space (10GB)</td><td>Per 10GB/month</td><td>'+data.pricing.storage+' per 10GB</td></tr>'+
-    '<tr><td>Instant Answer Credits</td><td>Per 10K answers</td><td>'+data.pricing.answers+' per 10K answers</td></tr>'+
-    '<tr><td>WhatsApp Credits</td><td>Per 10K messages</td><td>'+data.pricing.whatsapp+' per 10K messages</td></tr>'+
-    '<tr><td>Services Cost</td><td>Per Hour</td><td>'+data.pricing.services+' per hour</td></tr>'+
-    '</table>'+
-    '<h2>Agreement</h2>'+
-    '<p>The parties hereby have executed this Agreement as of the Effective Date given above.</p>'+
-    '<table style="margin-top:20px">'+
-    '<tr><th></th><th>Customer</th><th>Provider</th></tr>'+
-    '<tr><td>Company Name</td><td>'+data.name+'</td><td>Bsharp Sales Enablers Private Limited</td></tr>'+
-    '<tr><td>Address</td><td>'+data.address+'</td><td>783, Ranka Heights, Domlur, Bangalore 560071</td></tr>'+
-    '<tr><td>Signatory Name</td><td>'+data.signatory+'</td><td>Lakshmi Raj</td></tr>'+
-    '<tr><td>Signatory Designation</td><td>'+data.designation+'</td><td>Commercial Officer</td></tr>'+
-    '<tr><td>Signature</td><td>____________________</td><td>____________________</td></tr>'+
-    '</table>'+
-    '</div>';
+  var S = '<div style="font-family:\'Times New Roman\',serif;font-size:13px;line-height:1.8;color:#222">';
+  // PAGE 1: Title & Parties
+  S += '<h1 style="text-align:center;font-size:18px;margin-bottom:0">SAAS SUBSCRIPTION AGREEMENT</h1>';
+  S += '<p>This SaaS Subscription Agreement (&quot;Agreement&quot;) is made and entered into as of <b>'+data.date+'</b>, by and between:</p>';
+  S += '<p><b>Bsharp Sales Enablers Private Limited (&quot;Provider&quot;)</b>,<br>a company registered in Bangalore, India, with its principal place of business at 783, Ranka Heights, Patel Rama Reddy Layout, Domlur, Bangalore 560071.</p>';
+  S += '<p>Tax ID:<br>Bsharp PAN: AAFCB2679A<br>Company\'s GST: 29AAFCB2679A1ZR</p>';
+  S += '<p>and</p>';
+  S += '<p><b>'+data.name+' (&quot;Customer&quot;)</b>,<br>a business entity with its registered address at '+data.address+'.</p>';
+  S += '<p>Tax ID:<br>Customer PAN: '+(data.pan||'[PAN]')+'<br>Customer GST: '+(data.gst||'[GST]')+'</p>';
+  S += '<p>Contact: '+(data.email||'')+(data.mobile ? ' | '+data.mobile : '')+'</p>';
+  S += '<p>This Agreement governs the use of Bsharp Converse, an AI-powered engagement and learning platform, including but not limited to AI-assisted knowledge retrieval, content creation, team recognition, and coaching features.</p>';
+  S += '<p>This Agreement comes in 6 sections, and all the sections make the agreement whole:</p>';
+  S += '<ul><li>Bsharp Converse Summary</li><li>Services Summary</li><li>Applicability</li><li>Pricing</li><li>Agreement</li><li>Appendix A: SAAS (Software as a Service) Terms and Conditions</li></ul>';
+  // PAGE 2: Bsharp Converse Summary
+  S += '<h2>Bsharp Converse Summary</h2>';
+  S += '<p><b>Bsharp Converse is an AI-first learning platform built for frontline teams, helping organizations turn employee readiness into a true competitive advantage.</b> It enables companies to move fast by delivering the right training and information instantly \u2014 without needing large L&D teams or long development cycles.</p>';
+  S += '<p>Converse is backed by <b>enterprise-grade security</b> with ISO 27001:2022, SOC 2, and AWS FTR compliance. It is available globally via <b>Google Chat Marketplace</b> and <b>AWS Marketplace</b>, enabling quick and easy deployment.</p>';
+  S += '<p>Bsharp constantly upgrades the features of Bsharp Converse. The latest features are available on the website <a href="http://www.bsharpcorp.com">www.bsharpcorp.com</a>.</p>';
+  S += '<p>These are the features of Bsharp Converse, and the features that can be accessed by the Customer are detailed in the Applicability section.</p>';
+  S += '<table><tr><th>Feature</th><th>Description</th></tr>';
+  S += '<tr><td>User Management</td><td>Login with Google, Microsoft Enterprise IDs. Auto-login of users from specific domain. Define attributes | Manage Users</td></tr>';
+  S += '<tr><td>Instant Answers</td><td>Upload documents in a Channel. Users can get questions answered from the Knowledge Base</td></tr>';
+  S += '<tr><td>Daily Learning</td><td>Generate Flash Cards & Quiz with AI. Users can consume Flash Cards & Quiz everyday for learning.</td></tr>';
+  S += '<tr><td>Learnbee</td><td>Create training content with AI</td></tr>';
+  S += '<tr><td>Content</td><td>Share content with users including Learnbee, PDF, Videos, Quiz and more. Deploy by groups of users. Track consumption.</td></tr>';
+  S += '<tr><td>Pathway</td><td>A series of Content Modules laid down in a sequence. Pathway can be linked to Priority of the organisation.</td></tr>';
+  S += '<tr><td>Reports</td><td>All functions above have detailed reports.</td></tr>';
+  S += '<tr><td>Integrations</td><td>Bsharp offers integration with WhatsApp, Google Chat.</td></tr>';
+  S += '<tr><td>Experimental Features</td><td>Bsharp will introduce experimental features that can be switched on / off by customer optionally. They are in Beta stage. These are usually provided free of cost on top of the original deliverables.</td></tr>';
+  S += '</table>';
+  // PAGE 3: Services Summary
+  S += '<h2>Services Summary</h2>';
+  S += '<p>These are the services applicable for Bsharp Converse.</p>';
+  S += '<table><tr><th>Service</th><th>Terms</th><th>Description</th></tr>';
+  S += '<tr><td>Help Portal</td><td>Free</td><td>Available to all</td></tr>';
+  S += '<tr><td>Ticketing & Support</td><td>All paid customers</td><td>Customers can raise tickets. Bsharp will address with-in one working day</td></tr>';
+  S += '<tr><td>Administration</td><td>Paid</td><td>Company Set-up, Initial Set-up, Ongoing User Management, Attributes and other set-up. Customers can raise tickets or contact nominated email ID.</td></tr>';
+  S += '<tr><td>Reporting</td><td>Paid</td><td>Reports Set-up. Ongoing reporting</td></tr>';
+  S += '<tr><td>Program Management</td><td>Paid</td><td>Program effectiveness review. Recommendations</td></tr>';
+  S += '<tr><td>Content Development</td><td>Paid</td><td>Bsharp will develop content (with AI, and in other formats).</td></tr>';
+  S += '</table>';
+  // PAGE 4-5: Applicability
+  S += '<h2>Applicability</h2>';
+  S += '<p>This section talks about the applicability of the Product features and Service deliverables for the \u2018Customer\u2019. These are the deliverables to the \u2018Customer\u2019. Bsharp might launch new Features or Services in the future. Bsharp will determine if the new feature or service offered is included or not included in the basket of deliverables to the Customer.</p>';
+  S += '<p><b>Bsharp Converse Features Applicable to the \u2018Customer\u2019:</b></p>';
+  S += '<table><tr><th>Feature</th><th>Applicable</th><th>Limits</th></tr>'+featRows+'</table>';
+  S += '<p><b>Add-on Pricing:</b> These items have add-on pricing, found in the Pricing Schedule.</p>';
+  S += '<table><tr><th>Add-on</th><th>Limits</th></tr>';
+  S += '<tr><td>Storage Space</td><td>Add on above 10GB. Available in 10GB chunks</td></tr>';
+  S += '<tr><td>Instant Answers</td><td>Add on above 200 answers per active user per month. Available in 10K answer chunks.</td></tr>';
+  S += '<tr><td>WhatsApp</td><td>Available only for India. Add on. Not available part of base pack. Available in 10K message chunks.</td></tr>';
+  S += '</table>';
+  S += '<p><b>Bsharp Services Applicable to the \u2018Customer\u2019:</b></p>';
+  S += '<table><tr><th>Feature</th><th>Limits</th></tr>';
+  S += '<tr><td>Overall Administration Pack<br>User Management<br>Reporting<br>Program Management</td><td>Minimum commitment of 8 hours per month. Charged by the hour</td></tr>';
+  S += '<tr><td>Content Creation</td><td>2-10 hour per content. Charged by the hour</td></tr>';
+  S += '</table>';
+  S += '<p>The customer can opt-in for the services anytime. Services and Products are billed on a pro-rata basis for the month.</p>';
+  // PAGE 6: Pricing
+  S += '<h2>Pricing Schedule for Customer</h2>';
+  S += '<table><tr><th>Pricing</th><th>Basis</th><th>Cost</th></tr>';
+  S += '<tr><td>License cost of Bsharp Converse</td><td>Per Active User</td><td>'+data.pricing.license+' per active user per month. 20% of added users as minimum guarantee. Minimum guarantee of '+data.pricing.minguarantee+' users per month.</td></tr>';
+  S += '<tr><td>Storage Space 10GB</td><td>10GB per month</td><td>'+data.pricing.storage+' per 10GB storage. Talk to Bsharp for pricing on higher chunks.</td></tr>';
+  S += '<tr><td>Instant Answer Credits</td><td>Per 10K answers</td><td>'+data.pricing.answers+' per 10K answers. Can be used across monthly billing periods.</td></tr>';
+  S += '<tr><td>WhatsApp Credits</td><td>Per 10K messages</td><td>'+data.pricing.whatsapp+' per 10K messages. Applicable only for India.</td></tr>';
+  S += '<tr><td>Services Cost</td><td>Per Hour of effort</td><td>'+data.pricing.services+' per hour</td></tr>';
+  S += '<tr><td>Other costs</td><td></td><td>Talk to Bsharp.</td></tr>';
+  S += '</table>';
+  S += '<p><b>Definition of active user</b><br>Active users are the users who consume at least one element of content in each month \u2014 one question in \u2018Instant Answers\u2019, one learning card in \u2018Learning Cards\u2019, one content module in \u2018Content Modules\u2019. Bsharp Converse will provide active user reports.</p>';
+  S += '<p><b>Example of Active User Pricing</b></p>';
+  S += '<table><tr><th>Product Licencing On Active User Basis \u2014 Example</th><th></th></tr>';
+  S += '<tr><td>Total users added</td><td>200</td></tr>';
+  S += '<tr><td>Active User Cost</td><td>'+data.pricing.license+'</td></tr>';
+  S += '<tr><td>Minimum Guarantee [20% of 200 = 40 users]</td><td>40 \u00d7 '+data.pricing.license.replace(/[^0-9]/g,'')+' = Rs. '+(40*parseInt(data.pricing.license.replace(/[^0-9]/g,''))||3000)+'</td></tr>';
+  S += '<tr><td>Example: Jan billing [Active users = 160]</td><td>160 \u00d7 '+data.pricing.license.replace(/[^0-9]/g,'')+' = Rs. '+(160*parseInt(data.pricing.license.replace(/[^0-9]/g,''))||12000)+'</td></tr>';
+  S += '<tr><td>Example: Feb billing [Active users = 35]. Billing for minimum 40 users.</td><td>40 \u00d7 '+data.pricing.license.replace(/[^0-9]/g,'')+' = Rs. '+(40*parseInt(data.pricing.license.replace(/[^0-9]/g,''))||3000)+'</td></tr>';
+  S += '<tr><td colspan="2">Minimum Guarantee billing for any Customer will not go lesser than '+data.pricing.minguarantee+' Users Per month. That is the minimum billing for the Product.<br>Invoice raised by 1st of every month. Payable by 7th of every month. GST as applicable.</td></tr>';
+  S += '</table>';
+  // PAGE 7: Agreement signature
+  S += '<h2>Agreement</h2>';
+  S += '<p>The parties hereby have executed this Agreement as of the Effective Date given above, acknowledging pricing and deliverables provided in the above pages and the Terms and Conditions found in Appendix A of this document.</p>';
+  S += '<table><tr><th></th><th>Customer</th><th>Provider</th></tr>';
+  S += '<tr><td>Company Name</td><td>'+data.name+'</td><td>Bsharp Sales Enablers Private Limited</td></tr>';
+  S += '<tr><td>Address</td><td>'+data.address+'</td><td>783, Ranka Heights, Domlur, Bangalore 560071, India.</td></tr>';
+  S += '<tr><td>Signatory Name</td><td>'+data.signatory+'</td><td>Lakshmi Raj</td></tr>';
+  S += '<tr><td>Signatory Designation</td><td>'+data.designation+'</td><td>Commercial Officer</td></tr>';
+  S += '<tr><td>Signature</td><td>____________________</td><td>____________________</td></tr>';
+  S += '</table>';
+  // Appendix A: Terms and Conditions (exact from original)
+  S += '<h2>Appendix A: Terms and Conditions</h2>';
+  S += '<p><b>1. Term & Renewal:</b><br>This Agreement shall remain in effect for one (1) year from the date of signing, after which it will automatically renew for successive one-year periods under the same terms, unless either party provides written notice of non-renewal at least 3 days before the renewal date.</p>';
+  S += '<p><b>2: Scope of Services</b><br>This section defines what Bsharp Converse provides under the contract. It ensures clarity on features, availability, and usage limits.</p>';
+  S += '<p><b>2.1 Bsharp Converse</b><br>Under this Agreement, Bsharp Converse provides access to its AI-powered engagement and learning platform, which includes but is not limited to the features described in the Features section of this document. The specific functionalities of these features are defined in the official product documentation available at <a href="https://www.bsharpcorp.com">www.bsharpcorp.com</a>.</p>';
+  S += '<p><b>2.2 Service Availability</b><br>The platform is available 24/7, except for planned maintenance periods.<br>\u2022 Planned maintenance will be communicated at least 24 hours in advance.<br>\u2022 The Provider commits to a 99.9% uptime guarantee, as outlined in the Service Level Agreement.</p>';
+  S += '<p><b>2.3 Usage Limits & Fair Use Policy</b><br>AI-generated responses under Instant Answers are subject to the outlined limits per user. The Provider reserves the right to rate-limit excessive usage to ensure service stability for all users.</p>';
+  S += '<p><b>3: Fees & Payment Terms</b></p>';
+  S += '<p><b>3.1 Subscription Fees</b><br>The Customer agrees to pay the subscription fees as per the selected plan. Pricing details are provided in the subscription agreement or invoice shared at the time of purchase.<br>Fees are based on:<br>\u2022 Instant Answers \u2014 First 100 AI-generated answers per user per month are included. Additional answers are charged at $1 per 250 answers.<br>\u2022 Other Features \u2014 Learning Cards, Content, Coaching, and Google Chat integration are included at no additional cost.<br>\u2022 All fees are non-refundable, except as expressly stated in this Agreement.</p>';
+  S += '<p><b>3.2 Payment Terms</b><br>Payments shall be made monthly in advance.<br>\u2022 The Customer shall pay all invoices within 7 days from the invoice date.<br>\u2022 Payments will be made via [Payment Methods: Bank Transfer / Credit Card / Other].</p>';
+  S += '<p><b>3.3 Late Payments & Service Suspension</b><br>If payment is not received within 5 days of the due date, the Provider reserves the right to:<br>\u2022 Suspend access to the platform until payment is received.<br>\u2022 No interest or late fee will be charged.</p>';
+  S += '<p><b>3.4 Taxes</b><br>All fees are exclusive of applicable taxes, including GST/VAT, which shall be borne by the Customer.</p>';
+  S += '<p><b>3.5 Price Revisions</b><br>The Provider reserves the right to revise pricing at the end of the contract period, with at least 30 days\u2019 prior notice to the Customer.</p>';
+  S += '<p><b>Section 4: User Responsibilities</b></p>';
+  S += '<p><b>4.1 Appropriate Use of Services</b><br>The Customer agrees to use Bsharp Converse solely for business purposes and in accordance with this Agreement. The Customer shall not:<br>\u2022 Use the platform for unauthorized or illegal activities.<br>\u2022 Attempt to reverse engineer, modify, or tamper with the software.<br>\u2022 Overload the system with automated queries or excessive API calls beyond the agreed usage limits.<br>\u2022 Upload or distribute malware, viruses, or harmful content.<br>\u2022 Use the platform in a manner that harms or disrupts other users.</p>';
+  S += '<p><b>4.2 Data Ownership & Confidentiality</b><br>Bsharp Converse operates as a walled garden. Customer data is not shared with the Internet, and AI-generated answers do not use external web-based information.<br>\u2022 The Customer retains full ownership of any documents, knowledge base content, or other data uploaded to the platform.<br>\u2022 The Provider shall maintain confidentiality of all customer data and will not share, distribute, or use the data beyond delivering the contracted services.<br>\u2022 Customer data is not used to train AI models outside the specific enterprise environment.</p>';
+  S += '<p><b>4.3 Security & Access Control</b><br>The Customer is responsible for maintaining secure login credentials and preventing unauthorized access.<br>\u2022 Users can optionally enable Multi-Factor Authentication (MFA) for enhanced security.<br>\u2022 Any unauthorized use or security breach must be reported to the Provider immediately.</p>';
+  S += '<p><b>4.4 Compliance with Laws</b><br>The Customer agrees to comply with all applicable laws and regulations, including the Information Technology (IT) Act, 2000 of India and any applicable data protection laws.<br>\u2022 The Customer shall not use the platform to store or transmit personal data unless necessary for the intended use case.</p>';
+  S += '<p><b>4.5 Responsibility for End Users</b><br>If the Customer grants access to their employees, contractors, or third-party users, the Customer is responsible for ensuring compliance with this Agreement by all authorized users. Any misuse by an end user may result in service suspension or termination.</p>';
+  S += '<p><b>5: Intellectual Property Rights</b></p>';
+  S += '<p><b>5.1 Ownership of the Platform</b><br>Bsharp Sales Enablers Private Limited / Bsharp Sales Enablers, LLC (\u201cProvider\u201d) retains all rights, title, and interest in Bsharp Converse, including:<br>\u2022 The software, AI models, and algorithms.<br>\u2022 The user interface, features, and underlying infrastructure.<br>\u2022 All enhancements, modifications, and updates to the platform.<br>\u2022 This Agreement does not transfer any ownership of the platform to the Customer.</p>';
+  S += '<p><b>5.2 Customer Data & AI-Generated Content</b><br>The Customer retains full ownership of:<br>\u2022 Documents, training materials, and knowledge base content uploaded to Bsharp Converse.<br>\u2022 AI-generated content created using Bsharp Converse.<br>\u2022 The Provider does not claim ownership of Customer data but requires a limited license to process it for delivering services.</p>';
+  S += '<p><b>5.3 License Grant to the Customer</b><br>\u2022 The Provider grants the Customer a non-exclusive, non-transferable, limited license to use Bsharp Converse for business purposes during the contract term.<br>\u2022 This license cannot be sublicensed, resold, or used for competing purposes.</p>';
+  S += '<p><b>5.4 Restrictions on Use</b><br>The Customer shall not:<br>\u2022 Reverse engineer, decompile, or attempt to derive the source code of Bsharp Converse.<br>\u2022 Modify, copy, or distribute any part of Bsharp Converse without prior written consent.<br>\u2022 Showcase or demonstrate Bsharp Converse to other IT solution providers, software companies, or technology firms with the objective of replicating its product or features.</p>';
+  S += '<p><b>5.5 Feedback & Improvements</b><br>If the Customer provides suggestions, feedback, or improvements, the Provider may use them without any obligation to compensate the Customer. Any features or updates developed based on Customer feedback remain Provider-owned intellectual property.</p>';
+  S += '<p><b>5.6 Third-Party Content & Integrations</b><br>The platform may integrate with third-party applications (e.g., Google Chat, MS Teams). The Provider is not responsible for third-party software functionality, security, or data policies.</p>';
+  S += '<p><b>Section 6: Security & Compliance</b></p>';
+  S += '<p><b>6.1 Security Measures & Architecture</b><br>The Provider shall make reasonable efforts to ensure the security and integrity of the Bsharp Converse platform by implementing industry-standard security practices. Security measures include:<br>\u2022 Encryption of data in transit and at rest.<br>\u2022 Access controls to prevent unauthorized data access.<br>\u2022 Regular security audits and penetration testing to identify vulnerabilities.<br>\u2022 Network monitoring and threat detection to prevent cyberattacks.<br>\u2022 The Provider is ISO 27001, ensuring that security controls are in place for data protection, risk management, and operational security.</p>';
+  S += '<p><b>6.2 Customer Responsibilities</b><br>The Customer shall take reasonable steps to protect access credentials and prevent unauthorized access.<br>\u2022 The Customer is responsible for configuring role-based access within their organization to limit sensitive data exposure.<br>\u2022 Any suspected breach, unauthorized access, or security incident must be reported to the Provider immediately.</p>';
+  S += '<p><b>8.2 Scheduled Maintenance</b><br>\u2022 The Provider may perform routine maintenance to ensure optimal platform performance.<br>\u2022 Customers will receive at least 24 hours\u2019 prior notice for any planned maintenance.<br>\u2022 Maintenance windows will be scheduled during off-peak hours whenever possible to minimize disruption.</p>';
+  S += '<p><b>8.3 Support Availability & Response Times</b><br>Customer support is available via support email at converse.support@bsharpcorp.com. Support response times are as follows:<br>\u2022 Critical Issues (Platform Unavailability or Data Loss): Initial response within 2 hours.<br>\u2022 High Priority Issues (Major Feature Malfunction): Response within 4 business hours.<br>\u2022 General Inquiries & Non-Urgent Issues: Response within 24 business hours.</p>';
+  S += '<p><b>8.4 Exclusions from Uptime Guarantee</b><br>The 99.9% uptime commitment does not apply in the following cases:<br>\u2022 Planned maintenance with prior notice.<br>\u2022 Force majeure events such as natural disasters, cyberattacks, hyper-scalar downtimes or government actions beyond the Provider\u2019s control.<br>\u2022 Downtime caused by third-party integrations, including Google Chat, MS Teams, or other external service providers.<br>\u2022 Customer-related issues, such as network failures on the Customer\u2019s end.</p>';
+  S += '<p><b>8.5 Service Credits for Downtime</b><br>If uptime falls below 99.9%, the Customer may request a service credit based on the percentage of downtime beyond the guaranteed level. Service credits are capped at one month\u2019s subscription fee and cannot be redeemed for cash or refunds.</p>';
+  S += '<p><b>Section 9: Termination & Suspension</b></p>';
+  S += '<p><b>9.1 Termination by Customer</b><br>The Customer may terminate this Agreement by providing one (1) month\u2019s written notice to the Provider. No refunds will be issued for any pre-paid subscription fees.</p>';
+  S += '<p><b>9.2 Termination by Provider</b><br>The Provider may terminate this Agreement under the following conditions:<br>\u2022 Breach of Terms: If the Customer violates any material terms of this Agreement and fails to cure the breach within 7 days of written notice.<br>\u2022 Non-Payment: If payment is overdue by more than 30 days, and the Customer has not made arrangements to settle outstanding dues.<br>\u2022 Legal or Compliance Issues: If continued service violates applicable laws or regulatory requirements.<br>\u2022 Disruption or Misuse: If the Customer engages in activities that disrupt platform functionality or attempts to replicate the Provider\u2019s proprietary features for competitive purposes.</p>';
+  S += '<p><b>9.3 Suspension of Services</b><br>The Provider reserves the right to temporarily suspend services in the following cases:<br>\u2022 Failure to make timely payments after due reminders.<br>\u2022 Suspected security breach or unauthorized access detected in the Customer\u2019s account.<br>\u2022 Excessive or abnormal usage beyond agreed limits, affecting platform performance for other users.<br>\u2022 Suspension does not relieve the Customer of payment obligations.</p>';
+  S += '<p><b>9.4 Post-Termination Data Handling</b><br>Upon termination, the Provider shall retain Customer data for 60 days, after which it will be permanently deleted unless otherwise required by law. The Customer may request a data export before the retention period expires.</p>';
+  S += '<p><b>9.5 Survival of Obligations</b><br>The following provisions shall survive termination: Confidentiality obligations, Intellectual Property rights, Liability limitations and indemnifications.</p>';
+  S += '<p><b>Section 10: Limitation of Liability & Indemnification</b></p>';
+  S += '<p><b>10.1 Limitation of Liability</b><br>The Provider shall not be liable for any indirect, incidental, consequential, special, or punitive damages, including but not limited to:<br>\u2022 Loss of profits, revenue, or anticipated savings.<br>\u2022 Business interruption or loss of business opportunities.<br>\u2022 Loss, corruption, or unauthorized access to data.<br>\u2022 The total liability of the Provider, whether in contract, tort, or otherwise, shall not exceed the total fees paid by the Customer in the last three (3) months preceding the claim.</p>';
+  S += '<p><b>10.2 Exclusions from Liability</b><br>The Provider shall not be held liable for service disruptions, data loss, or security breaches caused by:<br>\u2022 Third-party service providers, including Google Chat, MS Teams, or external integrations.<br>\u2022 Acts of force majeure, including but not limited to natural disasters, cyberattacks, power failures, or governmental actions.<br>\u2022 Customer\u2019s misuse or negligence, including unauthorized data exposure or failure to implement recommended security measures.</p>';
+  S += '<p><b>10.3 Indemnification by Customer</b><br>The Customer agrees to indemnify, defend, and hold harmless the Provider against any claims, damages, losses, or legal expenses arising from:<br>\u2022 The Customer\u2019s misuse of the platform or non-compliance with this Agreement.<br>\u2022 Any violation of applicable laws or regulations in connection with the Customer\u2019s use of the platform.<br>\u2022 Any third-party claims alleging that the Customer\u2019s content infringes on intellectual property rights or data privacy regulations.</p>';
+  S += '<p><b>10.4 Indemnification by Provider</b><br>The Provider shall indemnify and defend the Customer against claims alleging that Bsharp Converse infringes any third-party intellectual property rights, provided that:<br>\u2022 The claim is not due to the Customer\u2019s modifications, misuse, or unauthorized integration of the platform.<br>\u2022 The Provider is given prompt notice of such claims and the opportunity to defend or settle them.<br>\u2022 If the platform is found to infringe on third-party rights, the Provider may: Obtain the necessary rights for continued use; Modify the platform to avoid infringement; If neither option is feasible, terminate the contract and refund any prepaid fees on a pro-rata basis.</p>';
+  S += '<p><b>11: Governing Law & Dispute Resolution</b></p>';
+  S += '<p><b>11.1 Governing Law</b><br>This Agreement shall be governed by and construed in accordance with the laws of India, without regard to conflict of law principles.</p>';
+  S += '<p><b>11.2 Dispute Resolution</b><br>In the event of any dispute, controversy, or claim arising out of or relating to this Agreement, the parties shall first attempt to resolve the dispute amicably through negotiations. If the dispute is not resolved within 30 days, either party may refer the dispute to binding arbitration under the Arbitration and Conciliation Act, 1996. The arbitration shall be conducted in Bangalore, India, and the proceedings shall be in English. The arbitration shall be conducted by a sole arbitrator, mutually appointed by both parties. If the parties fail to agree on an arbitrator, an arbitrator shall be appointed in accordance with the rules of the Arbitration and Conciliation Act, 1996.</p>';
+  S += '<p><b>11.3 Jurisdiction</b><br>Subject to the above arbitration clause, the courts in Bangalore, India, shall have exclusive jurisdiction over any disputes arising out of this Agreement.</p>';
+  S += '</div>';
+  return S;
 }
 
 function previewContract() {
