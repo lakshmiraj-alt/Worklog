@@ -214,6 +214,19 @@ tbody td.muted{color:var(--text2)}
 .note-comment-input input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:12.5px;outline:none}
 .note-template-btn{padding:5px 10px;border:1px solid var(--border);border-radius:99px;background:var(--surface);cursor:pointer;font-size:11px;color:var(--text2);font-family:'DM Sans',sans-serif;transition:all .1s}
 .note-template-btn:hover{background:var(--accent-light);color:var(--accent);border-color:var(--accent)}
+/* Contract Tool */
+.contract-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.contract-form .full{grid-column:1/-1}
+.contract-preview{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:2rem;font-family:'Times New Roman',serif;font-size:13px;line-height:1.8;max-height:500px;overflow-y:auto}
+.contract-preview h2{font-size:16px;margin:16px 0 8px}
+.contract-preview table{border-collapse:collapse;width:100%;margin:10px 0}
+.contract-preview td,.contract-preview th{border:1px solid #999;padding:6px 10px;font-size:12px}
+.contract-preview th{background:#f0f0f0}
+.contract-toggle{display:flex;align-items:center;gap:8px;padding:6px 0}
+.contract-toggle label{font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.contract-saved-list{margin-top:1rem}
+.contract-saved-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;cursor:pointer;transition:background .1s}
+.contract-saved-item:hover{background:var(--surface2)}
 @media(max-width:768px){
   .notes-sidebar{flex-direction:column;min-height:auto}
   .notes-list-panel{width:100%;border-right:none;border-bottom:1px solid var(--border);padding-right:0;padding-bottom:1rem;max-height:200px;overflow-y:auto}
@@ -932,6 +945,82 @@ tbody td.muted{color:var(--text2)}
   </div>
 </div>
 
+<!-- ===== CONTRACT TOOL (Admin) ===== -->
+<div class="page" id="page-contract">
+  <div style="margin-bottom:1rem">
+    <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">Contract Generator</div>
+    <div style="color:var(--text2);font-size:13.5px">Generate Bsharp Converse SaaS agreements for India customers. Fill in details, preview, and download.</div>
+  </div>
+
+  <!-- Saved contracts -->
+  <div class="card" id="contract-saved-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="card-title" style="margin-bottom:0"><div class="card-title-icon">📂</div> Saved Contracts</div>
+      <button class="submit-btn" style="width:auto;padding:8px 16px" onclick="newContract()">+ New Contract</button>
+    </div>
+    <div id="contract-saved-list"></div>
+  </div>
+
+  <!-- Contract form -->
+  <div id="contract-form-section" style="display:none">
+    <div class="card">
+      <div class="card-title"><div class="card-title-icon">👤</div> Customer Details</div>
+      <div class="contract-form">
+        <div class="field"><label>Customer Name</label><input type="text" id="ct-name" placeholder="e.g. Acme Corp Private Limited"/></div>
+        <div class="field"><label>Effective Date</label><input type="date" id="ct-date"/></div>
+        <div class="field full"><label>Customer Address</label><input type="text" id="ct-address" placeholder="Full registered address"/></div>
+        <div class="field"><label>Customer GST Number</label><input type="text" id="ct-gst" placeholder="e.g. 29XXXXX1234X1ZX"/></div>
+        <div class="field"><label>Customer PAN Number</label><input type="text" id="ct-pan" placeholder="e.g. XXXPX1234X"/></div>
+        <div class="field"><label>Contact Email</label><input type="email" id="ct-email" placeholder="contact@company.com"/></div>
+        <div class="field"><label>Contact Mobile</label><input type="text" id="ct-mobile" placeholder="+91 XXXXX XXXXX"/></div>
+        <div class="field"><label>Signatory Name</label><input type="text" id="ct-signatory" placeholder="Full name of person signing"/></div>
+        <div class="field"><label>Signatory Designation</label><input type="text" id="ct-designation" placeholder="e.g. CEO, Director"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="card-title-icon">✅</div> Feature Applicability</div>
+      <div id="ct-features">
+        <div class="contract-toggle"><label><input type="checkbox" id="ct-f-usermgmt" checked/> User Management</label><input type="text" id="ct-fl-usermgmt" value="No limits" style="width:200px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px" placeholder="Limits"/></div>
+        <div class="contract-toggle"><label><input type="checkbox" id="ct-f-instant" checked/> Instant Answers</label><input type="text" id="ct-fl-instant" value="200 Answers Per Month, Per Active User" style="width:200px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px" placeholder="Limits"/></div>
+        <div class="contract-toggle"><label><input type="checkbox" id="ct-f-learnbee" checked/> Learnbee AI Content</label><input type="text" id="ct-fl-learnbee" value="8 content per month published" style="width:200px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px" placeholder="Limits"/></div>
+        <div class="contract-toggle"><label><input type="checkbox" id="ct-f-daily" checked/> Daily Learning</label><input type="text" id="ct-fl-daily" value="No limits" style="width:200px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px" placeholder="Limits"/></div>
+        <div class="contract-toggle"><label><input type="checkbox" id="ct-f-content" checked/> Content</label><input type="text" id="ct-fl-content" value="No limits. 10GB storage." style="width:200px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px" placeholder="Limits"/></div>
+        <div class="contract-toggle"><label><input type="checkbox" id="ct-f-pathway" checked/> Pathway</label><input type="text" id="ct-fl-pathway" value="No limits" style="width:200px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px" placeholder="Limits"/></div>
+        <div class="contract-toggle"><label><input type="checkbox" id="ct-f-gchat" checked/> Integration — Google Chat</label><input type="text" id="ct-fl-gchat" value="No limits" style="width:200px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px" placeholder="Limits"/></div>
+        <div class="contract-toggle"><label><input type="checkbox" id="ct-f-whatsapp"/> Integration — WhatsApp</label><input type="text" id="ct-fl-whatsapp" value="Paid service" style="width:200px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px" placeholder="Limits"/></div>
+        <div class="contract-toggle"><label><input type="checkbox" id="ct-f-experimental" checked/> Experimental Features</label><input type="text" id="ct-fl-experimental" value="Free as applicable" style="width:200px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px" placeholder="Limits"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="card-title-icon">💰</div> Pricing Schedule</div>
+      <div class="contract-form">
+        <div class="field"><label>License Cost (per active user/month)</label><input type="text" id="ct-p-license" value="Rs. 75" placeholder="e.g. Rs. 75"/></div>
+        <div class="field"><label>Minimum Guarantee Users</label><input type="text" id="ct-p-minguarantee" value="20" placeholder="e.g. 20"/></div>
+        <div class="field"><label>Storage (per 10GB/month)</label><input type="text" id="ct-p-storage" value="Rs. 2500" placeholder="e.g. Rs. 2500"/></div>
+        <div class="field"><label>Instant Answer Credits (per 10K)</label><input type="text" id="ct-p-answers" value="Rs. 2000" placeholder="e.g. Rs. 2000"/></div>
+        <div class="field"><label>WhatsApp Credits (per 10K messages)</label><input type="text" id="ct-p-whatsapp" value="Rs. 2500" placeholder="e.g. Rs. 2500"/></div>
+        <div class="field"><label>Services Cost (per hour)</label><input type="text" id="ct-p-services" value="Rs. 750" placeholder="e.g. Rs. 750"/></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+      <button class="submit-btn" style="width:auto;padding:10px 24px" onclick="saveContract()">💾 Save Contract</button>
+      <button onclick="previewContract()" style="padding:10px 20px;border:1px solid var(--accent);border-radius:var(--radius-lg);background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--accent)">👁 Preview</button>
+      <button onclick="downloadContractDocx()" style="padding:10px 20px;border:1px solid var(--text);border-radius:var(--radius-lg);background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--text)">📥 Download DOCX</button>
+      <button onclick="downloadContractPDF()" style="padding:10px 20px;border:1px solid var(--text);border-radius:var(--radius-lg);background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--text)">📥 Download PDF</button>
+      <button onclick="backToContractList()" style="padding:10px 16px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text3)">← Back</button>
+    </div>
+
+    <!-- Preview -->
+    <div class="card" id="contract-preview-card" style="display:none">
+      <div class="card-title"><div class="card-title-icon">👁</div> Contract Preview</div>
+      <div class="contract-preview" id="contract-preview"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== AUDIT LOG (Admin) ===== -->
 <div class="page" id="page-audit">
   <div class="report-header">
@@ -1354,6 +1443,7 @@ function buildNavTabs() {
     html += navBtn('employees', '👥', 'Manage Employees');
     html += '<div class="nav-section">Tools</div>';
     html += navBtn('ai', '🤖', 'AI Assistant');
+    html += navBtn('contract', '📄', 'Contract Tool');
     html += navBtn('audit', '📜', 'Audit Log');
     html += navBtn('digest', '📧', 'Email Digest');
     html += navBtn('settings', '⚙️', 'Settings');
@@ -1858,7 +1948,7 @@ function exportCSV() {
 // NAV & UTILS
 // ============================================================
 function switchPage(page,btn) {
-  var adminOnlyPages = ['leave','expmanage','ai','settings','goals','audit','digest','employees'];
+  var adminOnlyPages = ['leave','expmanage','ai','settings','goals','audit','digest','employees','contract'];
   var permPages = ['dashboard','report'];
   if (adminOnlyPages.indexOf(page) !== -1 && (!currentUser || !currentUser.isAdmin)) {
     showToast('Admin access required',true);
@@ -1892,6 +1982,7 @@ function doSwitchPage(page,btn) {
   if (page==='goals') renderGoals();
   if (page==='employees') renderEmployeeManager();
   if (page==='audit') renderAuditLog();
+  if (page==='contract') loadContractPage();
   if (page==='digest') loadDigestPage();
   if (page==='settings') loadSettingsPage();
 }
@@ -2601,6 +2692,217 @@ function closeAttachment() {
 }
 
 // ============================================================
+// CONTRACT TOOL
+// ============================================================
+var contractData = JSON.parse(localStorage.getItem('wl_contracts') || '[]');
+var currentContractId = null;
+
+function saveContractsLocal() { localStorage.setItem('wl_contracts', JSON.stringify(contractData)); }
+
+function loadContractPage() {
+  renderContractList();
+}
+
+function renderContractList() {
+  document.getElementById('contract-form-section').style.display = 'none';
+  document.getElementById('contract-saved-card').style.display = 'block';
+  var list = document.getElementById('contract-saved-list');
+  if (contractData.length === 0) {
+    list.innerHTML = '<div class="empty-state">No contracts saved yet. Click + New Contract.</div>';
+    return;
+  }
+  list.innerHTML = contractData.sort(function(a,b){ return (b.updated||'').localeCompare(a.updated||''); }).map(function(c) {
+    return '<div class="contract-saved-item" onclick="editContract(\''+c.id+'\')">'+
+      '<div><strong>'+(c.name||'Untitled')+'</strong><div style="font-size:11px;color:var(--text3)">Created: '+(c.updated||'')+'</div></div>'+
+      '<div style="display:flex;gap:6px">'+
+        '<button class="action-btn" onclick="event.stopPropagation();editContract(\''+c.id+'\')">Edit</button>'+
+        '<button class="action-btn reject" onclick="event.stopPropagation();deleteContract(\''+c.id+'\')">×</button>'+
+      '</div></div>';
+  }).join('');
+}
+
+function newContract() {
+  currentContractId = String(Date.now());
+  document.getElementById('contract-saved-card').style.display = 'none';
+  document.getElementById('contract-form-section').style.display = 'block';
+  document.getElementById('contract-preview-card').style.display = 'none';
+  // Clear form
+  ['ct-name','ct-address','ct-gst','ct-pan','ct-email','ct-mobile','ct-signatory','ct-designation'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('ct-date').valueAsDate = new Date();
+  // Reset pricing to defaults
+  document.getElementById('ct-p-license').value = 'Rs. 75';
+  document.getElementById('ct-p-minguarantee').value = '20';
+  document.getElementById('ct-p-storage').value = 'Rs. 2500';
+  document.getElementById('ct-p-answers').value = 'Rs. 2000';
+  document.getElementById('ct-p-whatsapp').value = 'Rs. 2500';
+  document.getElementById('ct-p-services').value = 'Rs. 750';
+}
+
+function editContract(id) {
+  var c = contractData.find(function(x){ return x.id === id; });
+  if (!c) return;
+  currentContractId = id;
+  document.getElementById('contract-saved-card').style.display = 'none';
+  document.getElementById('contract-form-section').style.display = 'block';
+  document.getElementById('contract-preview-card').style.display = 'none';
+  // Fill form
+  document.getElementById('ct-name').value = c.name || '';
+  document.getElementById('ct-date').value = c.date || '';
+  document.getElementById('ct-address').value = c.address || '';
+  document.getElementById('ct-gst').value = c.gst || '';
+  document.getElementById('ct-pan').value = c.pan || '';
+  document.getElementById('ct-email').value = c.email || '';
+  document.getElementById('ct-mobile').value = c.mobile || '';
+  document.getElementById('ct-signatory').value = c.signatory || '';
+  document.getElementById('ct-designation').value = c.designation || '';
+  // Features
+  var feats = c.features || {};
+  ['usermgmt','instant','learnbee','daily','content','pathway','gchat','whatsapp','experimental'].forEach(function(f) {
+    var cb = document.getElementById('ct-f-'+f);
+    var lim = document.getElementById('ct-fl-'+f);
+    if (cb) cb.checked = feats[f] !== false;
+    if (lim && feats[f+'_limit']) lim.value = feats[f+'_limit'];
+  });
+  // Pricing
+  var p = c.pricing || {};
+  if (p.license) document.getElementById('ct-p-license').value = p.license;
+  if (p.minguarantee) document.getElementById('ct-p-minguarantee').value = p.minguarantee;
+  if (p.storage) document.getElementById('ct-p-storage').value = p.storage;
+  if (p.answers) document.getElementById('ct-p-answers').value = p.answers;
+  if (p.whatsapp) document.getElementById('ct-p-whatsapp').value = p.whatsapp;
+  if (p.services) document.getElementById('ct-p-services').value = p.services;
+}
+
+function getContractFormData() {
+  var features = {};
+  ['usermgmt','instant','learnbee','daily','content','pathway','gchat','whatsapp','experimental'].forEach(function(f) {
+    features[f] = document.getElementById('ct-f-'+f).checked;
+    features[f+'_limit'] = document.getElementById('ct-fl-'+f).value;
+  });
+  return {
+    id: currentContractId,
+    name: document.getElementById('ct-name').value.trim(),
+    date: document.getElementById('ct-date').value,
+    address: document.getElementById('ct-address').value.trim(),
+    gst: document.getElementById('ct-gst').value.trim(),
+    pan: document.getElementById('ct-pan').value.trim(),
+    email: document.getElementById('ct-email').value.trim(),
+    mobile: document.getElementById('ct-mobile').value.trim(),
+    signatory: document.getElementById('ct-signatory').value.trim(),
+    designation: document.getElementById('ct-designation').value.trim(),
+    features: features,
+    pricing: {
+      license: document.getElementById('ct-p-license').value,
+      minguarantee: document.getElementById('ct-p-minguarantee').value,
+      storage: document.getElementById('ct-p-storage').value,
+      answers: document.getElementById('ct-p-answers').value,
+      whatsapp: document.getElementById('ct-p-whatsapp').value,
+      services: document.getElementById('ct-p-services').value
+    },
+    updated: todayISO()
+  };
+}
+
+function saveContract() {
+  var data = getContractFormData();
+  if (!data.name) { showToast('Please enter customer name',true); return; }
+  var idx = contractData.findIndex(function(c){ return c.id === data.id; });
+  if (idx >= 0) contractData[idx] = data; else contractData.push(data);
+  saveContractsLocal();
+  logAudit('status', '<strong>'+currentUser.name+'</strong> saved contract: '+data.name);
+  showToast('✓ Contract saved for '+data.name);
+}
+
+function deleteContract(id) {
+  if (!confirm('Delete this contract?')) return;
+  contractData = contractData.filter(function(c){ return c.id !== id; });
+  saveContractsLocal();
+  renderContractList();
+  showToast('Contract deleted');
+}
+
+function backToContractList() {
+  currentContractId = null;
+  renderContractList();
+}
+
+function generateContractHTML(data) {
+  var featNames = {usermgmt:'User Management',instant:'Instant Answers',learnbee:'Learnbee AI Content',daily:'Daily Learning',content:'Content',pathway:'Pathway',gchat:'Integration — Google Chat',whatsapp:'Integration — WhatsApp',experimental:'Experimental Features'};
+  var featRows = '';
+  ['usermgmt','instant','learnbee','daily','content','pathway','gchat','whatsapp','experimental'].forEach(function(f) {
+    var applicable = data.features[f] ? 'Yes' : 'No';
+    var limits = data.features[f] ? (data.features[f+'_limit'] || 'No limits') : 'N/A';
+    featRows += '<tr><td>'+featNames[f]+'</td><td>'+applicable+'</td><td>'+limits+'</td></tr>';
+  });
+
+  return '<div style="font-family:\'Times New Roman\',serif;font-size:13px;line-height:1.8">'+
+    '<h1 style="text-align:center;font-size:18px">SAAS SUBSCRIPTION AGREEMENT</h1>'+
+    '<p>This SaaS Subscription Agreement ("Agreement") is made and entered into as of <strong>'+data.date+'</strong>, by and between:</p>'+
+    '<p><strong>Bsharp Sales Enablers Private Limited ("Provider")</strong>,<br>a company registered in Bangalore, India, with its principal place of business at 783, Ranka Heights, Patel Rama Reddy Layout, Domlur, Bangalore 560071.<br>PAN: AAFCB2679A | GST: 29AAFCB2679A1ZR</p>'+
+    '<p>and</p>'+
+    '<p><strong>'+data.name+' ("Customer")</strong>,<br>a business entity with its registered address at '+data.address+'.<br>'+
+    (data.pan ? 'PAN: '+data.pan : '')+(data.gst ? ' | GST: '+data.gst : '')+'<br>'+
+    'Email: '+data.email+' | Mobile: '+data.mobile+'</p>'+
+    '<hr>'+
+    '<h2>Bsharp Converse Features Applicable to the Customer</h2>'+
+    '<table><tr><th>Feature</th><th>Applicable</th><th>Limits</th></tr>'+featRows+'</table>'+
+    '<h2>Pricing Schedule for Customer</h2>'+
+    '<table>'+
+    '<tr><th>Item</th><th>Basis</th><th>Cost</th></tr>'+
+    '<tr><td>License — Bsharp Converse</td><td>Per Active User/Month</td><td>'+data.pricing.license+' per active user per month. Min guarantee: '+data.pricing.minguarantee+' users.</td></tr>'+
+    '<tr><td>Storage Space (10GB)</td><td>Per 10GB/month</td><td>'+data.pricing.storage+' per 10GB</td></tr>'+
+    '<tr><td>Instant Answer Credits</td><td>Per 10K answers</td><td>'+data.pricing.answers+' per 10K answers</td></tr>'+
+    '<tr><td>WhatsApp Credits</td><td>Per 10K messages</td><td>'+data.pricing.whatsapp+' per 10K messages</td></tr>'+
+    '<tr><td>Services Cost</td><td>Per Hour</td><td>'+data.pricing.services+' per hour</td></tr>'+
+    '</table>'+
+    '<h2>Agreement</h2>'+
+    '<p>The parties hereby have executed this Agreement as of the Effective Date given above.</p>'+
+    '<table style="margin-top:20px">'+
+    '<tr><th></th><th>Customer</th><th>Provider</th></tr>'+
+    '<tr><td>Company Name</td><td>'+data.name+'</td><td>Bsharp Sales Enablers Private Limited</td></tr>'+
+    '<tr><td>Address</td><td>'+data.address+'</td><td>783, Ranka Heights, Domlur, Bangalore 560071</td></tr>'+
+    '<tr><td>Signatory Name</td><td>'+data.signatory+'</td><td>Lakshmi Raj</td></tr>'+
+    '<tr><td>Signatory Designation</td><td>'+data.designation+'</td><td>Commercial Officer</td></tr>'+
+    '<tr><td>Signature</td><td>____________________</td><td>____________________</td></tr>'+
+    '</table>'+
+    '</div>';
+}
+
+function previewContract() {
+  var data = getContractFormData();
+  if (!data.name) { showToast('Please enter customer name',true); return; }
+  document.getElementById('contract-preview-card').style.display = 'block';
+  document.getElementById('contract-preview').innerHTML = generateContractHTML(data);
+  document.getElementById('contract-preview-card').scrollIntoView({behavior:'smooth'});
+}
+
+function downloadContractPDF() {
+  var data = getContractFormData();
+  if (!data.name) { showToast('Please enter customer name',true); return; }
+  var html = generateContractHTML(data);
+  var win = window.open('','_blank');
+  win.document.write('<html><head><title>Contract — '+data.name+'</title><style>body{font-family:"Times New Roman",serif;padding:40px;font-size:13px;line-height:1.8}table{border-collapse:collapse;width:100%;margin:10px 0}td,th{border:1px solid #999;padding:6px 10px;font-size:12px}th{background:#f0f0f0}h1{font-size:18px;text-align:center}h2{font-size:15px;margin:16px 0 8px}@media print{body{padding:20px}}</style></head><body>'+html+'<script>setTimeout(function(){window.print();},500)<\/script></body></html>');
+  win.document.close();
+}
+
+function downloadContractDocx() {
+  var data = getContractFormData();
+  if (!data.name) { showToast('Please enter customer name',true); return; }
+  var html = generateContractHTML(data);
+  // Create a simple HTML-based .doc file (opens in Word)
+  var content = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>body{font-family:"Times New Roman",serif;font-size:13px;line-height:1.8}table{border-collapse:collapse;width:100%;margin:10px 0}td,th{border:1px solid #999;padding:6px 10px;font-size:12px}th{background:#f0f0f0}h1{font-size:18px;text-align:center}h2{font-size:15px}</style></head><body>'+html+'</body></html>';
+  var blob = new Blob([content], {type:'application/msword'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'Contract_'+data.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+data.date+'.doc';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✓ Contract downloaded as Word document');
+  logAudit('status', '<strong>'+currentUser.name+'</strong> downloaded contract: '+data.name);
+}
+
+// ============================================================
 // SETTINGS (Admin)
 // ============================================================
 // ============================================================
@@ -3093,6 +3395,8 @@ async function checkAndSendReminders() {
     var missing = [];
 
     employeeList.forEach(function(emp) {
+      // Skip admins — only remind regular employees
+      if (emp.role === 'admin') return;
       if (!submittedYesterday.has(emp.name)) {
         missing.push(emp);
       }
