@@ -1035,6 +1035,20 @@ tbody td.muted{color:var(--text2)}
   </div>
 </div>
 
+<!-- ===== HELPDESK (Admin) ===== -->
+<div class="page" id="page-helpdesk">
+  <div style="margin-bottom:0.5rem;display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">HelpDesk</div>
+      <div style="color:var(--text2);font-size:13.5px">Support ticketing, knowledge base, SLA tracking, and customer satisfaction.</div>
+    </div>
+    <a href="helpdesk.html" target="_blank" style="padding:8px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;color:var(--text2);text-decoration:none;font-family:'DM Sans',sans-serif">Open in new tab ↗</a>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;height:calc(100vh - 140px)">
+    <iframe src="helpdesk.html" style="width:100%;height:100%;border:none"></iframe>
+  </div>
+</div>
+
 <!-- ===== AUDIT LOG (Admin) ===== -->
 <div class="page" id="page-audit">
   <div class="report-header">
@@ -1459,6 +1473,7 @@ function buildNavTabs() {
     html += navBtn('ai', '🤖', 'AI Assistant');
     html += navBtn('contract', '📄', 'Contract Tool');
     html += navBtn('eventcap', '🎪', 'Event Connector');
+    html += navBtn('helpdesk', '🎧', 'HelpDesk');
     html += navBtn('audit', '📜', 'Audit Log');
     html += navBtn('digest', '📧', 'Email Digest');
     html += navBtn('settings', '⚙️', 'Settings');
@@ -1980,7 +1995,7 @@ function exportCSV() {
 // NAV & UTILS
 // ============================================================
 function switchPage(page,btn) {
-  var adminOnlyPages = ['leave','expmanage','ai','settings','goals','audit','digest','employees','contract','eventcap'];
+  var adminOnlyPages = ['leave','expmanage','ai','settings','goals','audit','digest','employees','contract','eventcap','helpdesk'];
   var permPages = ['dashboard','report'];
   if (adminOnlyPages.indexOf(page) !== -1 && (!currentUser || !currentUser.isAdmin)) {
     showToast('Admin access required',true);
