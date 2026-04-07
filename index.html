@@ -311,13 +311,22 @@ tbody td.muted{color:var(--text2)}
   <div class="login-box">
     <div class="logo"><div class="logo-dot"></div>WorkLog</div>
 
+    <!-- STEP 0: Choose login method -->
+    <div class="otp-step active" id="login-step-choose">
+      <div class="login-sub">Choose how you'd like to sign in</div>
+      <button class="login-btn" onclick="window.open('face-login.html','_self')" style="margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px">📸 Login with Face</button>
+      <button class="login-btn" onclick="showEmailLogin()" style="background:var(--surface);color:var(--accent);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;gap:8px">📧 Login with Email OTP</button>
+      <div class="login-info" style="margin-top:16px">Face login requires prior registration. <a href="face-login.html" style="color:var(--accent)">Register face →</a></div>
+    </div>
+
     <!-- STEP 1: Enter email -->
-    <div class="otp-step active" id="login-step-email">
+    <div class="otp-step" id="login-step-email">
       <div class="login-sub">Sign in with your BSharp Corp email</div>
       <input type="email" id="login-email" placeholder="yourname@bsharpcorp.com" autocomplete="email" onkeydown="if(event.key==='Enter')sendOTP()"/>
       <button class="login-btn" id="send-otp-btn" onclick="sendOTP()">Send verification code →</button>
       <div class="login-error" id="login-error"></div>
       <div class="login-info">A 6-digit code will be sent to your email</div>
+      <button class="otp-back" onclick="backToChoose()">← Back to login options</button>
     </div>
 
     <!-- STEP 2: Enter OTP -->
@@ -1421,6 +1430,17 @@ function backToEmail() {
   document.getElementById('login-step-email').classList.add('active');
   document.getElementById('login-email').focus();
   if (resendCountdown) clearInterval(resendCountdown);
+}
+
+function showEmailLogin() {
+  document.getElementById('login-step-choose').classList.remove('active');
+  document.getElementById('login-step-email').classList.add('active');
+  document.getElementById('login-email').focus();
+}
+
+function backToChoose() {
+  document.getElementById('login-step-email').classList.remove('active');
+  document.getElementById('login-step-choose').classList.add('active');
 }
 
 function applyLogin() {
