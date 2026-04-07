@@ -197,6 +197,9 @@ function stopCamera(mode) {
 }
 
 // Real-time face detection overlay
+var autoLoginAttempted = false;
+var autoLoginInProgress = false;
+
 function startFaceDetection(mode) {
   var videoId = mode === 'login' ? 'login-video' : 'reg-video';
   var canvasId = mode === 'login' ? 'login-canvas' : 'reg-canvas';
@@ -208,7 +211,7 @@ function startFaceDetection(mode) {
   var guide = document.getElementById(guideId);
 
   var detect = async function() {
-    if (!video.srcObject || video.paused) return;
+    if (!video.srcObject || video.paused || autoLoginInProgress) return;
     var detections = await faceapi.detectAllFaces(video).withFaceLandmarks();
     var dims = faceapi.matchDimensions(canvas, video, true);
     var resized = faceapi.resizeResults(detections, dims);
@@ -218,8 +221,45 @@ function startFaceDetection(mode) {
     if (detections.length === 1) {
       guide.classList.add('detected');
       document.getElementById(btnId).disabled = false;
-      document.getElementById(statusId).textContent = '✓ Face detected — ready';
+      document.getElementById(statusId).textContent = '✓ Face detected — scanning...';
       document.getElementById(statusId).className = 'status status-success';
+
+      // Auto-login: if registered faces exist, try matching immediately
+      if (mode === 'login' && faceData.length > 0 && !autoLoginInProgress) {
+        autoLoginInProgress = true;
+        document.getElementById(statusId).textContent = '🔍 Recognizing face...';
+        try {
+          var fullDetection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+          if (fullDetection) {
+            var labeledDescriptors = faceData.map(function(f) {
+              return new faceapi.LabeledFaceDescriptors(f.email, [new Float32Array(f.descriptor)]);
+            });
+            var matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
+            var match = matcher.findBestMatch(fullDetection.descriptor);
+            if (match.label !== 'unknown') {
+              var user = faceData.find(function(f) { return f.email === match.label; });
+              var confidence = Math.round((1 - match.distance) * 100);
+              document.getElementById(statusId).innerHTML = '✓ Welcome back, <strong>' + user.name + '</strong>! (' + confidence + '%)';
+              if (loginDetectionInterval) clearInterval(loginDetectionInterval);
+              setTimeout(function() {
+                stopCamera('login');
+                localStorage.setItem('wl_login', JSON.stringify({
+                  email: user.email, name: user.name, team: '',
+                  expires: Date.now() + (7 * 24 * 60 * 60 * 1000)
+                }));
+                document.getElementById('success-name').textContent = 'Welcome, ' + user.name + '!';
+                document.getElementById('success-info').textContent = user.email + ' · ' + confidence + '% match';
+                switchTab('success');
+              }, 1000);
+              return;
+            } else {
+              document.getElementById(statusId).textContent = 'Face not recognized. Click "Scan & Login" to retry or use OTP.';
+              document.getElementById(statusId).className = 'status status-error';
+              autoLoginInProgress = false;
+            }
+          } else { autoLoginInProgress = false; }
+        } catch(e) { autoLoginInProgress = false; }
+      }
     } else if (detections.length > 1) {
       guide.classList.remove('detected');
       document.getElementById(btnId).disabled = true;
@@ -230,12 +270,13 @@ function startFaceDetection(mode) {
       document.getElementById(btnId).disabled = true;
       document.getElementById(statusId).textContent = 'Position your face in the circle';
       document.getElementById(statusId).className = 'status status-loading';
+      autoLoginInProgress = false;
     }
   };
 
   if (loginDetectionInterval) clearInterval(loginDetectionInterval);
   video.addEventListener('playing', function() {
-    loginDetectionInterval = setInterval(detect, 500);
+    loginDetectionInterval = setInterval(detect, 800);
   });
 }
 
