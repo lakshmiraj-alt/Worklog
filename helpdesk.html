@@ -122,6 +122,7 @@ tr:hover{background:var(--surface2)}
     <button class="nav-tab" onclick="switchPage('agents',this)"><span class="nav-icon">👥</span>Agents</button>
     <button class="nav-tab" onclick="switchPage('sla',this)"><span class="nav-icon">⏱</span>SLA Policies</button>
     <button class="nav-tab" onclick="switchPage('csat',this)"><span class="nav-icon">⭐</span>Satisfaction</button>
+    <button class="nav-tab" onclick="switchPage('aisettings',this)"><span class="nav-icon">🧠</span>AI Settings</button>
   </div>
 </div>
 <div class="topbar">
@@ -203,7 +204,19 @@ tr:hover{background:var(--surface2)}
   <div class="webform-container">
     <div class="webform-header">
       <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">Submit a Support Request</div>
-      <div style="color:var(--text2);font-size:13.5px">We'll get back to you as soon as possible</div>
+      <div style="color:var(--text2);font-size:13.5px">Ask our AI assistant first, or submit a ticket directly</div>
+    </div>
+    <!-- AI Chatbot -->
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title"><span class="card-title-icon">🤖</span>AI Assistant — Ask a question first</div>
+      <div id="chatbot-messages" style="max-height:250px;overflow-y:auto;margin-bottom:10px;padding:8px;background:var(--bg);border-radius:var(--radius)">
+        <div style="font-size:12px;color:var(--text3);padding:8px">Hi! I can try to answer your question instantly. Type your question below.</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="chatbot-input" placeholder="Type your question..." onkeydown="if(event.key==='Enter')askChatbot()" style="flex:1"/>
+        <button class="btn btn-primary" onclick="askChatbot()" style="padding:9px 16px">Ask</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px">Can't find an answer? Submit a ticket below.</div>
     </div>
     <div class="card" id="webform-card">
       <div class="field"><label>Your Name</label><input type="text" id="wf-name" placeholder="Full name"/></div>
@@ -221,6 +234,32 @@ tr:hover{background:var(--surface2)}
       <div style="color:var(--text2);margin-bottom:16px">Your ticket ID is <strong id="wf-ticket-id"></strong>. We'll respond shortly.</div>
       <button class="btn btn-outline" onclick="resetWebForm()">Submit another</button>
     </div>
+  </div>
+</div>
+
+<!-- AI SETTINGS -->
+<div class="page" id="page-aisettings">
+  <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">AI Settings</div>
+  <div style="color:var(--text2);font-size:13.5px;margin-bottom:1.5rem">Configure AI features for auto-categorization, smart replies, and chatbot</div>
+  <div class="card">
+    <div class="card-title"><span class="card-title-icon">🔑</span>AI API Key</div>
+    <div class="field"><label>API Key (Groq or Anthropic Claude)</label>
+      <input type="password" id="ai-key-input" placeholder="gsk_... or sk-ant-..." value=""/>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-primary" onclick="saveAIKey()">Save Key</button>
+      <button class="btn btn-outline" onclick="testAIKey()">Test Connection</button>
+      <span id="ai-key-status" style="font-size:12px"></span>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:8px">Key is stored in your browser only. Supports Groq (free, gsk_...) and Anthropic Claude (sk-ant-...).</div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="card-title-icon">⚙️</span>AI Features</div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 0;cursor:pointer"><input type="checkbox" id="ai-feat-autocat" checked onchange="saveAIFeatures()"/> Auto-categorize & prioritize new tickets</label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 0;cursor:pointer"><input type="checkbox" id="ai-feat-sentiment" checked onchange="saveAIFeatures()"/> Sentiment detection (flag frustrated customers)</label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 0;cursor:pointer"><input type="checkbox" id="ai-feat-autoreply" checked onchange="saveAIFeatures()"/> Smart auto-reply suggestions</label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 0;cursor:pointer"><input type="checkbox" id="ai-feat-similar" checked onchange="saveAIFeatures()"/> Similar ticket finder</label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 0;cursor:pointer"><input type="checkbox" id="ai-feat-chatbot" checked onchange="saveAIFeatures()"/> AI chatbot on public form</label>
   </div>
 </div>
 
@@ -352,6 +391,7 @@ function switchPage(page, btn) {
   if (page === 'agents') renderAgents();
   if (page === 'sla') loadSLA();
   if (page === 'csat') renderCSAT();
+  if (page === 'aisettings') loadAISettings();
 }
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
@@ -464,6 +504,8 @@ function createTicket() {
   tickets.unshift(ticket); save();
   logActivity('Ticket <strong>#' + ticket.id + '</strong> created: ' + subject);
   showToast('✓ Ticket #' + ticket.id + ' created');
+  // AI auto-categorize in background
+  aiAutoCategorize(ticket).then(function() { if (document.getElementById('page-ticketdetail').classList.contains('active')) openTicket(ticket.id); });
   // Clear form
   ['nt-name', 'nt-email', 'nt-subject', 'nt-desc'].forEach(function(id) { document.getElementById(id).value = ''; });
   openTicket(ticket.id);
@@ -480,6 +522,7 @@ function submitWebForm() {
   var ticket = { id: ticketCounter, name: name, email: email, subject: subject, description: desc, category: category, priority: 'Medium', status: 'Open', agent: '', channel: 'Web Form', created: new Date().toISOString(), updated: new Date().toISOString(), comments: [] };
   tickets.unshift(ticket); save();
   logActivity('Web form ticket <strong>#' + ticket.id + '</strong>: ' + subject);
+  aiAutoCategorize(ticket);
   document.getElementById('webform-card').style.display = 'none';
   document.getElementById('webform-success').style.display = 'block';
   document.getElementById('wf-ticket-id').textContent = '#' + ticket.id;
@@ -533,6 +576,14 @@ function openTicket(id) {
   html += '<button class="btn btn-primary" onclick="updateTicket(' + t.id + ')">Update</button>';
   html += '<button class="btn btn-danger" onclick="deleteTicket(' + t.id + ')">Delete</button>';
   html += '</div>';
+
+  // AI Tools bar
+  html += '<div class="card" style="padding:10px 14px;margin-bottom:12px;background:var(--purple-bg);border-color:var(--purple)"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:13px;font-weight:600;color:var(--purple)">🧠 AI Tools:</span>';
+  html += '<button class="btn btn-outline" style="padding:5px 12px;font-size:11px" onclick="aiSuggestReply(' + t.id + ')">💡 Suggest Reply</button>';
+  html += '<button class="btn btn-outline" style="padding:5px 12px;font-size:11px" onclick="aiSummarize(' + t.id + ')">📝 Summarize</button>';
+  html += '<button class="btn btn-outline" style="padding:5px 12px;font-size:11px" onclick="aiSentiment(' + t.id + ')">😊 Sentiment</button>';
+  html += '<button class="btn btn-outline" style="padding:5px 12px;font-size:11px" onclick="aiFindSimilar(' + t.id + ')">🔍 Similar Tickets</button>';
+  html += '</div><div id="ai-result-' + t.id + '" style="margin-top:8px;font-size:13px;display:none"></div></div>';
 
   // Comments
   html += '<div class="card"><div class="card-title"><span class="card-title-icon">💬</span>Comments (' + (t.comments || []).length + ')</div>';
@@ -789,6 +840,215 @@ function renderCSAT() {
   tbody.innerHTML = csatData.slice().reverse().map(function(r) {
     return '<tr><td><strong>#' + r.ticketId + '</strong></td><td>' + r.requester + '</td><td>' + r.agent + '</td><td>' + '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating) + '</td><td style="font-size:12px;color:var(--text2)">' + (r.feedback || '—') + '</td><td>' + fmtDate(r.date) + '</td></tr>';
   }).join('');
+}
+
+// ============================================================
+// AI ENGINE
+// ============================================================
+function getHDKey() { return localStorage.getItem('hd_ai_key') || localStorage.getItem('wl_ai_key') || ''; }
+function getHDProvider(key) { if (key.startsWith('sk-ant-')) return 'anthropic'; return 'groq'; }
+var aiFeatures = JSON.parse(localStorage.getItem('hd_ai_features') || '{"autocat":true,"sentiment":true,"autoreply":true,"similar":true,"chatbot":true}');
+
+function saveAIKey() {
+  var key = document.getElementById('ai-key-input').value.trim();
+  if (!key) { showToast('Please enter a key'); return; }
+  localStorage.setItem('hd_ai_key', key);
+  showToast('✓ AI key saved');
+  document.getElementById('ai-key-status').innerHTML = '<span style="color:var(--green)">✓ Saved</span>';
+}
+
+function loadAISettings() {
+  var key = getHDKey();
+  if (key) document.getElementById('ai-key-input').value = key;
+  ['autocat','sentiment','autoreply','similar','chatbot'].forEach(function(f) {
+    var cb = document.getElementById('ai-feat-' + f);
+    if (cb) cb.checked = aiFeatures[f] !== false;
+  });
+}
+
+function saveAIFeatures() {
+  ['autocat','sentiment','autoreply','similar','chatbot'].forEach(function(f) {
+    var cb = document.getElementById('ai-feat-' + f);
+    if (cb) aiFeatures[f] = cb.checked;
+  });
+  localStorage.setItem('hd_ai_features', JSON.stringify(aiFeatures));
+}
+
+async function testAIKey() {
+  var key = getHDKey();
+  if (!key) { showToast('No key set'); return; }
+  document.getElementById('ai-key-status').innerHTML = '<span class="spinner"></span>';
+  try {
+    await callAI('Say "Connected!" in one word.', key);
+    document.getElementById('ai-key-status').innerHTML = '<span style="color:var(--green)">✓ Connected</span>';
+  } catch(e) {
+    document.getElementById('ai-key-status').innerHTML = '<span style="color:var(--red)">✗ ' + e.message + '</span>';
+  }
+}
+
+async function callAI(prompt, key) {
+  if (!key) key = getHDKey();
+  if (!key) throw new Error('No AI key configured');
+  var provider = getHDProvider(key);
+  if (provider === 'anthropic') {
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+    });
+    var data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    return data.content[0].text;
+  } else {
+    var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+    });
+    var data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    return data.choices[0].message.content;
+  }
+}
+
+// 1. AUTO-CATEGORIZE & PRIORITIZE
+async function aiAutoCategorize(ticket) {
+  if (!aiFeatures.autocat || !getHDKey()) return;
+  try {
+    var prompt = 'You are a helpdesk AI. Analyze this support ticket and respond ONLY with a JSON object like {"category":"Bug","priority":"High","sentiment":"frustrated"}.\n\nCategories: Bug, Feature Request, Account, Billing, Technical, General\nPriorities: Low, Medium, High, Critical\nSentiment: happy, neutral, concerned, frustrated, angry\n\nSubject: ' + ticket.subject + '\nDescription: ' + (ticket.description || '') + '\n\nRespond with JSON only, no other text.';
+    var result = await callAI(prompt);
+    var match = result.match(/\{[\s\S]*\}/);
+    if (match) {
+      var parsed = JSON.parse(match[0]);
+      if (parsed.category) ticket.category = parsed.category;
+      if (parsed.priority) ticket.priority = parsed.priority;
+      if (parsed.sentiment) {
+        ticket.sentiment = parsed.sentiment;
+        if (parsed.sentiment === 'angry' || parsed.sentiment === 'frustrated') {
+          ticket.priority = 'High';
+          ticket.flags = (ticket.flags || '') + '🚨 Frustrated customer';
+        }
+      }
+      save();
+    }
+  } catch(e) { /* silently fail */ }
+}
+
+// 2. SMART AUTO-REPLY
+async function aiSuggestReply(ticketId) {
+  var t = tickets.find(function(x) { return x.id === ticketId; });
+  if (!t) return;
+  var el = document.getElementById('ai-result-' + ticketId);
+  el.style.display = 'block';
+  el.innerHTML = '<span class="spinner"></span> Generating reply suggestion...';
+  try {
+    var kbContext = kbArticles.map(function(a) { return 'Article: ' + a.title + '\n' + a.content.substring(0, 300); }).join('\n---\n');
+    var commentsText = (t.comments || []).map(function(c) { return c.author + ': ' + c.text; }).join('\n');
+    var prompt = 'You are a helpful support agent for Bsharp Converse (an AI learning platform). Write a professional, empathetic reply to this support ticket.\n\nTicket Subject: ' + t.subject + '\nTicket Description: ' + (t.description || '') + '\nCategory: ' + t.category + '\nPrevious comments:\n' + commentsText + '\n\nKnowledge base articles for reference:\n' + kbContext + '\n\nWrite a concise, helpful reply (2-4 paragraphs). Be specific and solution-oriented.';
+    var reply = await callAI(prompt);
+    el.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:8px"><div style="font-weight:600;font-size:12px;color:var(--purple);margin-bottom:6px">💡 Suggested Reply:</div><div style="font-size:13px;line-height:1.7;white-space:pre-wrap">' + reply + '</div><button class="btn btn-primary" style="margin-top:8px;font-size:11px;padding:6px 14px" onclick="useAISuggestion(this)">Use this reply</button></div>';
+  } catch(e) { el.innerHTML = '<span style="color:var(--red)">AI error: ' + e.message + '</span>'; }
+}
+
+function useAISuggestion(btn) {
+  var text = btn.parentElement.querySelector('div[style*="pre-wrap"]').textContent;
+  var commentBox = document.getElementById('td-comment');
+  if (commentBox) commentBox.value = text;
+  showToast('✓ Reply copied to comment box');
+}
+
+// 3. TICKET SUMMARIZER
+async function aiSummarize(ticketId) {
+  var t = tickets.find(function(x) { return x.id === ticketId; });
+  if (!t) return;
+  var el = document.getElementById('ai-result-' + ticketId);
+  el.style.display = 'block';
+  el.innerHTML = '<span class="spinner"></span> Summarizing ticket...';
+  try {
+    var commentsText = (t.comments || []).map(function(c) { return c.author + (c.internal ? ' (internal)' : '') + ': ' + c.text; }).join('\n');
+    var prompt = 'Summarize this support ticket concisely in 3-5 bullet points.\n\nSubject: ' + t.subject + '\nDescription: ' + (t.description || '') + '\nStatus: ' + t.status + '\nPriority: ' + t.priority + '\nComments:\n' + commentsText + '\n\nProvide: 1) Issue summary 2) Key actions taken 3) Current status 4) Next steps needed';
+    var summary = await callAI(prompt);
+    el.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:8px"><div style="font-weight:600;font-size:12px;color:var(--purple);margin-bottom:6px">📝 AI Summary:</div><div style="font-size:13px;line-height:1.7;white-space:pre-wrap">' + summary + '</div></div>';
+  } catch(e) { el.innerHTML = '<span style="color:var(--red)">AI error: ' + e.message + '</span>'; }
+}
+
+// 4. SENTIMENT DETECTION
+async function aiSentiment(ticketId) {
+  var t = tickets.find(function(x) { return x.id === ticketId; });
+  if (!t) return;
+  var el = document.getElementById('ai-result-' + ticketId);
+  el.style.display = 'block';
+  el.innerHTML = '<span class="spinner"></span> Analyzing sentiment...';
+  try {
+    var commentsText = (t.comments || []).map(function(c) { return c.author + ': ' + c.text; }).join('\n');
+    var prompt = 'Analyze the customer sentiment in this support ticket. Respond with JSON only: {"sentiment":"happy/neutral/concerned/frustrated/angry","score":1-10,"summary":"brief explanation","recommendation":"what agent should do"}\n\nSubject: ' + t.subject + '\nDescription: ' + (t.description || '') + '\nComments:\n' + commentsText;
+    var result = await callAI(prompt);
+    var match = result.match(/\{[\s\S]*\}/);
+    if (match) {
+      var parsed = JSON.parse(match[0]);
+      var emoji = { happy: '😊', neutral: '😐', concerned: '😟', frustrated: '😤', angry: '🔴' };
+      var color = { happy: 'var(--green)', neutral: 'var(--text2)', concerned: 'var(--yellow)', frustrated: 'var(--accent)', angry: 'var(--red)' };
+      el.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:8px">' +
+        '<div style="font-weight:600;font-size:12px;color:var(--purple);margin-bottom:6px">😊 Sentiment Analysis:</div>' +
+        '<div style="font-size:20px;margin-bottom:4px">' + (emoji[parsed.sentiment] || '😐') + ' <span style="font-weight:700;color:' + (color[parsed.sentiment] || 'var(--text)') + '">' + (parsed.sentiment || 'unknown').toUpperCase() + '</span> <span style="font-size:13px;color:var(--text3)">(score: ' + (parsed.score || '?') + '/10)</span></div>' +
+        '<div style="font-size:13px;margin-bottom:4px">' + (parsed.summary || '') + '</div>' +
+        '<div style="font-size:12px;color:var(--blue);font-weight:500">💡 ' + (parsed.recommendation || '') + '</div></div>';
+      t.sentiment = parsed.sentiment; save();
+    } else { el.innerHTML = '<div style="font-size:13px">' + result + '</div>'; }
+  } catch(e) { el.innerHTML = '<span style="color:var(--red)">AI error: ' + e.message + '</span>'; }
+}
+
+// 5. SIMILAR TICKET FINDER
+async function aiFindSimilar(ticketId) {
+  var t = tickets.find(function(x) { return x.id === ticketId; });
+  if (!t) return;
+  var el = document.getElementById('ai-result-' + ticketId);
+  el.style.display = 'block';
+  el.innerHTML = '<span class="spinner"></span> Finding similar tickets...';
+  var otherTickets = tickets.filter(function(x) { return x.id !== ticketId; });
+  if (otherTickets.length === 0) { el.innerHTML = '<span style="color:var(--text3)">No other tickets to compare</span>'; return; }
+  try {
+    var ticketList = otherTickets.slice(0, 20).map(function(x) { return 'ID:' + x.id + ' Subject:"' + x.subject + '" Status:' + x.status + ' Category:' + x.category; }).join('\n');
+    var prompt = 'Find tickets similar to this one. Respond with JSON array of IDs only, e.g. [1001,1003]. Max 5 results. If none are similar, return [].\n\nCurrent ticket:\nSubject: ' + t.subject + '\nDescription: ' + (t.description || '').substring(0, 200) + '\nCategory: ' + t.category + '\n\nOther tickets:\n' + ticketList;
+    var result = await callAI(prompt);
+    var match = result.match(/\[[\s\S]*\]/);
+    if (match) {
+      var ids = JSON.parse(match[0]);
+      if (ids.length === 0) { el.innerHTML = '<span style="color:var(--text3)">No similar tickets found</span>'; return; }
+      var html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:8px"><div style="font-weight:600;font-size:12px;color:var(--purple);margin-bottom:8px">🔍 Similar Tickets:</div>';
+      ids.forEach(function(id) {
+        var sim = tickets.find(function(x) { return x.id === id; });
+        if (sim) {
+          html += '<div style="padding:8px;border-bottom:1px solid var(--border);cursor:pointer" onclick="openTicket(' + sim.id + ')"><strong>#' + sim.id + '</strong> ' + sim.subject + ' <span class="badge badge-' + statusClass(sim.status) + '">' + sim.status + '</span></div>';
+        }
+      });
+      html += '</div>';
+      el.innerHTML = html;
+    } else { el.innerHTML = '<span style="color:var(--text3)">No similar tickets found</span>'; }
+  } catch(e) { el.innerHTML = '<span style="color:var(--red)">AI error: ' + e.message + '</span>'; }
+}
+
+// 6. AI CHATBOT
+async function askChatbot() {
+  var input = document.getElementById('chatbot-input');
+  var question = input.value.trim();
+  if (!question) return;
+  var msgs = document.getElementById('chatbot-messages');
+  msgs.innerHTML += '<div style="text-align:right;margin-bottom:8px"><span style="background:var(--accent-light);color:var(--accent);padding:6px 12px;border-radius:12px 12px 0 12px;font-size:13px;display:inline-block;max-width:80%">' + question + '</span></div>';
+  input.value = '';
+  msgs.innerHTML += '<div id="chatbot-typing" style="margin-bottom:8px"><span class="spinner"></span> <span style="font-size:12px;color:var(--text3)">Thinking...</span></div>';
+  msgs.scrollTop = msgs.scrollHeight;
+  try {
+    var kbContext = kbArticles.map(function(a) { return 'Article: ' + a.title + '\n' + a.content.substring(0, 500); }).join('\n---\n');
+    var prompt = 'You are a helpful AI support assistant for Bsharp Converse (an AI learning platform). Answer the user\'s question based on the knowledge base below. Be concise (2-3 sentences). If you cannot answer, say "I couldn\'t find an answer. Please submit a support ticket below for personalized help."\n\nKnowledge Base:\n' + (kbContext || 'No articles available yet.') + '\n\nUser Question: ' + question;
+    var reply = await callAI(prompt);
+    var typing = document.getElementById('chatbot-typing');
+    if (typing) typing.remove();
+    msgs.innerHTML += '<div style="margin-bottom:8px"><span style="background:var(--surface2);color:var(--text);padding:6px 12px;border-radius:12px 12px 12px 0;font-size:13px;display:inline-block;max-width:80%;line-height:1.6">🤖 ' + reply + '</span></div>';
+  } catch(e) {
+    var typing = document.getElementById('chatbot-typing');
+    if (typing) typing.remove();
+    msgs.innerHTML += '<div style="margin-bottom:8px"><span style="background:var(--red-bg);color:var(--red);padding:6px 12px;border-radius:12px;font-size:12px;display:inline-block">Could not connect to AI. Please submit a ticket below.</span></div>';
+  }
+  msgs.scrollTop = msgs.scrollHeight;
 }
 
 // ============================================================
