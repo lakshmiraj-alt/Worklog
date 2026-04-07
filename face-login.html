@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Face Login — BSharp WorkLog</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<style>
+:root{--bg:#F7F5F0;--surface:#fff;--surface2:#F2EFE9;--border:#E0DBD1;--text:#1A1714;--text2:#6B6560;--text3:#9E9890;--accent:#C4521A;--accent-light:#F9EDE6;--green:#1A7A4A;--green-bg:#E6F4EC;--red:#C0392B;--red-bg:#FDECEA;--radius:10px;--radius-lg:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center}
+.container{max-width:480px;width:100%;padding:20px}
+.logo{font-family:'DM Serif Display',serif;font-size:28px;text-align:center;margin-bottom:4px;display:flex;align-items:center;justify-content:center;gap:10px}
+.logo-dot{width:10px;height:10px;background:var(--accent);border-radius:50%}
+.subtitle{text-align:center;color:var(--text2);font-size:13px;margin-bottom:2rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1rem;box-shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04)}
+.card-title{font-weight:600;font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.video-container{position:relative;width:100%;aspect-ratio:4/3;background:#1a1a1a;border-radius:var(--radius);overflow:hidden;margin-bottom:12px}
+.video-container video{width:100%;height:100%;object-fit:cover}
+.video-container canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+.video-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;background:rgba(0,0,0,.6);color:#fff;font-size:14px;gap:8px}
+.face-guide{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:180px;height:220px;border:3px dashed rgba(255,255,255,.4);border-radius:50%;pointer-events:none}
+.face-guide.detected{border-color:#4ade80;border-style:solid;box-shadow:0 0 20px rgba(74,222,128,.3)}
+.btn{padding:10px 20px;border-radius:var(--radius-lg);border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;width:100%}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#a84315}
+.btn-outline{background:var(--surface);border:1px solid var(--border);color:var(--text2)}.btn-outline:hover{background:var(--surface2)}
+.btn-green{background:var(--green);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.status{text-align:center;padding:10px;font-size:13px;border-radius:var(--radius);margin-bottom:12px}
+.status-loading{background:var(--surface2);color:var(--text2)}
+.status-success{background:var(--green-bg);color:var(--green)}
+.status-error{background:var(--red-bg);color:var(--red)}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text2);margin-bottom:5px}
+.field input,.field select{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px;outline:none}
+.field input:focus{border-color:var(--accent)}
+.registered-faces{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.registered-face{width:60px;text-align:center}
+.registered-face img{width:50px;height:50px;border-radius:50%;object-fit:cover;border:2px solid var(--border)}
+.registered-face .name{font-size:10px;color:var(--text2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tabs{display:flex;gap:4px;margin-bottom:16px}
+.tab{flex:1;padding:10px;text-align:center;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);background:var(--surface2);transition:all .15s}
+.tab.active{background:var(--accent);color:#fff}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.disclaimer{font-size:11px;color:var(--text3);line-height:1.6;padding:12px;background:var(--surface2);border-radius:var(--radius);margin-bottom:12px}
+.success-screen{text-align:center;padding:2rem 1rem}
+.success-screen .check{font-size:64px;margin-bottom:12px}
+.success-screen .name{font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:4px}
+.success-screen .info{color:var(--text2);font-size:13px}
+@media(max-width:500px){.container{padding:12px}.face-guide{width:140px;height:170px}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo"><div class="logo-dot"></div>WorkLog</div>
+  <div class="subtitle">Face Recognition Login — Experimental</div>
+
+  <div id="loading-screen">
+    <div class="card" style="text-align:center;padding:2rem">
+      <div class="spinner" style="margin:0 auto 12px"></div>
+      <div style="font-weight:600;margin-bottom:4px">Loading AI models...</div>
+      <div style="font-size:12px;color:var(--text3)">This may take 10-20 seconds on first load</div>
+      <div id="model-progress" style="font-size:11px;color:var(--text3);margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div id="main-screen" style="display:none">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('login')">🔓 Login</div>
+      <div class="tab" onclick="switchTab('register')">📸 Register Face</div>
+      <div class="tab" onclick="switchTab('manage')">👥 Manage</div>
+    </div>
+
+    <!-- LOGIN TAB -->
+    <div class="card" id="tab-login">
+      <div class="card-title">🔓 Face Login</div>
+      <div id="login-status" class="status status-loading">Position your face in the circle below</div>
+      <div class="video-container">
+        <video id="login-video" autoplay muted playsinline></video>
+        <canvas id="login-canvas"></canvas>
+        <div class="face-guide" id="login-guide"></div>
+      </div>
+      <button class="btn btn-primary" id="login-btn" onclick="attemptFaceLogin()" disabled>🔍 Scan & Login</button>
+      <div style="text-align:center;margin-top:12px">
+        <button class="btn btn-outline" onclick="switchTab('otp')" style="width:auto;padding:8px 16px;font-size:12px">Can't login with face? Use OTP →</button>
+      </div>
+    </div>
+
+    <!-- OTP FALLBACK -->
+    <div class="card" id="tab-otp" style="display:none">
+      <div class="card-title">📧 OTP Login (Fallback)</div>
+      <div class="field"><label>Email</label><input type="email" id="otp-email" placeholder="yourname@bsharpcorp.com"/></div>
+      <div id="otp-step2" style="display:none">
+        <div class="field"><label>Enter 6-digit code</label><input type="text" id="otp-code" maxlength="6" placeholder="000000" style="text-align:center;font-size:20px;letter-spacing:8px"/></div>
+        <button class="btn btn-primary" onclick="verifyOTP()">Verify & Login</button>
+      </div>
+      <div id="otp-step1">
+        <button class="btn btn-primary" onclick="sendDemoOTP()">Send OTP</button>
+      </div>
+      <div id="otp-msg" style="font-size:12px;color:var(--text3);margin-top:8px;text-align:center"></div>
+      <div style="text-align:center;margin-top:12px">
+        <button class="btn btn-outline" onclick="switchTab('login')" style="width:auto;padding:8px 16px;font-size:12px">← Back to Face Login</button>
+      </div>
+    </div>
+
+    <!-- REGISTER TAB -->
+    <div class="card" id="tab-register" style="display:none">
+      <div class="card-title">📸 Register Your Face</div>
+      <div class="disclaimer">⚠️ <strong>Experimental Feature:</strong> Face data is stored only in your browser's localStorage. It is not sent to any server. This data can be cleared anytime by clearing browser data. By registering, you consent to local storage of your facial features.</div>
+      <div class="field"><label>Full Name</label><input type="text" id="reg-name" placeholder="e.g. Lakshmi Raj"/></div>
+      <div class="field"><label>Email</label><input type="email" id="reg-email" placeholder="yourname@bsharpcorp.com"/></div>
+      <div id="reg-status" class="status status-loading">Position your face in the circle</div>
+      <div class="video-container">
+        <video id="reg-video" autoplay muted playsinline></video>
+        <canvas id="reg-canvas"></canvas>
+        <div class="face-guide" id="reg-guide"></div>
+      </div>
+      <button class="btn btn-green" id="reg-btn" onclick="registerFace()" disabled>📸 Capture & Register</button>
+    </div>
+
+    <!-- MANAGE TAB -->
+    <div class="card" id="tab-manage" style="display:none">
+      <div class="card-title">👥 Registered Faces</div>
+      <div id="manage-list"></div>
+      <button class="btn btn-outline" onclick="clearAllFaces()" style="margin-top:12px;font-size:12px;color:var(--red);border-color:var(--red)">🗑 Clear All Face Data</button>
+    </div>
+
+    <!-- SUCCESS -->
+    <div class="card" id="tab-success" style="display:none">
+      <div class="success-screen">
+        <div class="check">✓</div>
+        <div class="name" id="success-name"></div>
+        <div class="info" id="success-info"></div>
+        <div style="margin-top:20px;display:flex;gap:8px;justify-content:center">
+          <button class="btn btn-primary" style="width:auto;padding:10px 24px" onclick="window.open('https://lakshmiraj-alt.github.io/Worklog/','_self')">Open WorkLog →</button>
+          <button class="btn btn-outline" style="width:auto;padding:10px 24px" onclick="switchTab('login')">Back</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// FACE RECOGNITION ENGINE
+// ============================================================
+var faceData = JSON.parse(localStorage.getItem('face_users') || '[]');
+var modelsLoaded = false;
+var loginStream = null;
+var regStream = null;
+var currentTab = 'login';
+var loginDetectionInterval = null;
+
+// Load face-api models
+async function loadModels() {
+  var progress = document.getElementById('model-progress');
+  try {
+    var MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/model/';
+    progress.textContent = 'Loading face detector...';
+    await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+    progress.textContent = 'Loading landmark model...';
+    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+    progress.textContent = 'Loading recognition model...';
+    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+    modelsLoaded = true;
+    progress.textContent = '✓ All models loaded';
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('main-screen').style.display = 'block';
+    startCamera('login');
+  } catch(e) {
+    progress.innerHTML = '<span style="color:var(--red)">Failed to load models: ' + e.message + '</span>';
+  }
+}
+
+// Camera management
+async function startCamera(mode) {
+  var videoId = mode === 'login' ? 'login-video' : 'reg-video';
+  var video = document.getElementById(videoId);
+  try {
+    var stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
+    video.srcObject = stream;
+    if (mode === 'login') { loginStream = stream; startFaceDetection('login'); }
+    else { regStream = stream; startFaceDetection('register'); }
+  } catch(e) {
+    var statusId = mode === 'login' ? 'login-status' : 'reg-status';
+    document.getElementById(statusId).innerHTML = '<span style="color:var(--red)">Camera access denied. Please allow camera.</span>';
+    document.getElementById(statusId).className = 'status status-error';
+  }
+}
+
+function stopCamera(mode) {
+  var stream = mode === 'login' ? loginStream : regStream;
+  if (stream) { stream.getTracks().forEach(function(t) { t.stop(); }); }
+  if (mode === 'login') loginStream = null; else regStream = null;
+}
+
+// Real-time face detection overlay
+function startFaceDetection(mode) {
+  var videoId = mode === 'login' ? 'login-video' : 'reg-video';
+  var canvasId = mode === 'login' ? 'login-canvas' : 'reg-canvas';
+  var guideId = mode === 'login' ? 'login-guide' : 'reg-guide';
+  var btnId = mode === 'login' ? 'login-btn' : 'reg-btn';
+  var statusId = mode === 'login' ? 'login-status' : 'reg-status';
+  var video = document.getElementById(videoId);
+  var canvas = document.getElementById(canvasId);
+  var guide = document.getElementById(guideId);
+
+  var detect = async function() {
+    if (!video.srcObject || video.paused) return;
+    var detections = await faceapi.detectAllFaces(video).withFaceLandmarks();
+    var dims = faceapi.matchDimensions(canvas, video, true);
+    var resized = faceapi.resizeResults(detections, dims);
+    faceapi.draw.drawDetections(canvas, resized);
+    faceapi.draw.drawFaceLandmarks(canvas, resized);
+
+    if (detections.length === 1) {
+      guide.classList.add('detected');
+      document.getElementById(btnId).disabled = false;
+      document.getElementById(statusId).textContent = '✓ Face detected — ready';
+      document.getElementById(statusId).className = 'status status-success';
+    } else if (detections.length > 1) {
+      guide.classList.remove('detected');
+      document.getElementById(btnId).disabled = true;
+      document.getElementById(statusId).textContent = 'Multiple faces detected — only one person please';
+      document.getElementById(statusId).className = 'status status-error';
+    } else {
+      guide.classList.remove('detected');
+      document.getElementById(btnId).disabled = true;
+      document.getElementById(statusId).textContent = 'Position your face in the circle';
+      document.getElementById(statusId).className = 'status status-loading';
+    }
+  };
+
+  if (loginDetectionInterval) clearInterval(loginDetectionInterval);
+  video.addEventListener('playing', function() {
+    loginDetectionInterval = setInterval(detect, 500);
+  });
+}
+
+// ============================================================
+// FACE REGISTRATION
+// ============================================================
+async function registerFace() {
+  var name = document.getElementById('reg-name').value.trim();
+  var email = document.getElementById('reg-email').value.trim();
+  if (!name || !email) { document.getElementById('reg-status').textContent = 'Please enter name and email'; document.getElementById('reg-status').className = 'status status-error'; return; }
+
+  document.getElementById('reg-btn').disabled = true;
+  document.getElementById('reg-status').textContent = 'Capturing face data...';
+  document.getElementById('reg-status').className = 'status status-loading';
+
+  try {
+    var video = document.getElementById('reg-video');
+    var detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+    if (!detection) { throw new Error('No face detected. Try again.'); }
+
+    // Capture thumbnail
+    var thumbCanvas = document.createElement('canvas');
+    thumbCanvas.width = 100; thumbCanvas.height = 100;
+    var ctx = thumbCanvas.getContext('2d');
+    var box = detection.detection.box;
+    ctx.drawImage(video, box.x, box.y, box.width, box.height, 0, 0, 100, 100);
+    var thumbnail = thumbCanvas.toDataURL('image/jpeg', 0.6);
+
+    // Store face descriptor
+    var descriptor = Array.from(detection.descriptor);
+    var existing = faceData.findIndex(function(f) { return f.email === email; });
+    var user = { name: name, email: email, descriptor: descriptor, thumbnail: thumbnail, registered: new Date().toISOString() };
+
+    if (existing >= 0) { faceData[existing] = user; }
+    else { faceData.push(user); }
+    localStorage.setItem('face_users', JSON.stringify(faceData));
+
+    document.getElementById('reg-status').innerHTML = '✓ Face registered for <strong>' + name + '</strong>';
+    document.getElementById('reg-status').className = 'status status-success';
+    document.getElementById('reg-name').value = '';
+    document.getElementById('reg-email').value = '';
+  } catch(e) {
+    document.getElementById('reg-status').textContent = 'Error: ' + e.message;
+    document.getElementById('reg-status').className = 'status status-error';
+  }
+  document.getElementById('reg-btn').disabled = false;
+}
+
+// ============================================================
+// FACE LOGIN
+// ============================================================
+async function attemptFaceLogin() {
+  document.getElementById('login-btn').disabled = true;
+  document.getElementById('login-status').textContent = 'Scanning face...';
+  document.getElementById('login-status').className = 'status status-loading';
+
+  if (faceData.length === 0) {
+    document.getElementById('login-status').textContent = 'No faces registered. Please register first.';
+    document.getElementById('login-status').className = 'status status-error';
+    document.getElementById('login-btn').disabled = false;
+    return;
+  }
+
+  try {
+    var video = document.getElementById('login-video');
+    var detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+    if (!detection) { throw new Error('No face detected. Try again.'); }
+
+    // Compare with stored faces
+    var labeledDescriptors = faceData.map(function(f) {
+      return new faceapi.LabeledFaceDescriptors(f.email, [new Float32Array(f.descriptor)]);
+    });
+    var matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
+    var match = matcher.findBestMatch(detection.descriptor);
+
+    if (match.label !== 'unknown') {
+      var user = faceData.find(function(f) { return f.email === match.label; });
+      var confidence = Math.round((1 - match.distance) * 100);
+
+      document.getElementById('login-status').innerHTML = '✓ Recognized: <strong>' + user.name + '</strong> (' + confidence + '% confidence)';
+      document.getElementById('login-status').className = 'status status-success';
+
+      // Show success screen
+      setTimeout(function() {
+        stopCamera('login');
+        document.getElementById('success-name').textContent = 'Welcome, ' + user.name + '!';
+        document.getElementById('success-info').textContent = user.email + ' · ' + confidence + '% match confidence';
+        switchTab('success');
+
+        // Store login session (compatible with WorkLog)
+        localStorage.setItem('wl_login', JSON.stringify({
+          email: user.email, name: user.name, team: '',
+          expires: Date.now() + (7 * 24 * 60 * 60 * 1000)
+        }));
+      }, 1500);
+      return;
+    } else {
+      var confidence = Math.round((1 - match.distance) * 100);
+      document.getElementById('login-status').innerHTML = 'Face not recognized (best match: ' + confidence + '%). <br><a href="#" onclick="switchTab(\'otp\');return false" style="color:var(--accent)">Try OTP login instead →</a>';
+      document.getElementById('login-status').className = 'status status-error';
+    }
+  } catch(e) {
+    document.getElementById('login-status').textContent = 'Error: ' + e.message;
+    document.getElementById('login-status').className = 'status status-error';
+  }
+  document.getElementById('login-btn').disabled = false;
+}
+
+// ============================================================
+// OTP FALLBACK
+// ============================================================
+var demoOTP = '';
+function sendDemoOTP() {
+  var email = document.getElementById('otp-email').value.trim();
+  if (!email) { document.getElementById('otp-msg').innerHTML = '<span style="color:var(--red)">Enter email</span>'; return; }
+  demoOTP = String(Math.floor(100000 + Math.random() * 900000));
+  document.getElementById('otp-step1').style.display = 'none';
+  document.getElementById('otp-step2').style.display = 'block';
+  document.getElementById('otp-msg').innerHTML = '<span style="color:var(--green)">Demo OTP: <strong>' + demoOTP + '</strong> (in production this would be emailed)</span>';
+}
+
+function verifyOTP() {
+  var code = document.getElementById('otp-code').value.trim();
+  if (code === demoOTP) {
+    var email = document.getElementById('otp-email').value.trim();
+    var name = email.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+    localStorage.setItem('wl_login', JSON.stringify({ email: email, name: name, team: '', expires: Date.now() + (7*24*60*60*1000) }));
+    document.getElementById('success-name').textContent = 'Welcome, ' + name + '!';
+    document.getElementById('success-info').textContent = email + ' · Logged in via OTP';
+    switchTab('success');
+  } else {
+    document.getElementById('otp-msg').innerHTML = '<span style="color:var(--red)">Invalid code. Try again.</span>';
+  }
+}
+
+// ============================================================
+// MANAGE FACES
+// ============================================================
+function renderManage() {
+  var list = document.getElementById('manage-list');
+  if (faceData.length === 0) { list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:1rem;font-size:13px">No faces registered yet</div>'; return; }
+  list.innerHTML = '<div style="font-size:12px;color:var(--text3);margin-bottom:8px">' + faceData.length + ' face(s) registered</div>' +
+    faceData.map(function(f, i) {
+      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">' +
+        '<img src="' + f.thumbnail + '" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--border)"/>' +
+        '<div style="flex:1"><div style="font-weight:600;font-size:13px">' + f.name + '</div><div style="font-size:11px;color:var(--text3)">' + f.email + '</div></div>' +
+        '<button onclick="removeFace(' + i + ')" style="background:none;border:1px solid var(--red);color:var(--red);border-radius:var(--radius);padding:4px 10px;cursor:pointer;font-size:11px;font-family:\'DM Sans\',sans-serif">Remove</button>' +
+      '</div>';
+    }).join('');
+}
+
+function removeFace(idx) {
+  if (!confirm('Remove ' + faceData[idx].name + '\'s face data?')) return;
+  faceData.splice(idx, 1);
+  localStorage.setItem('face_users', JSON.stringify(faceData));
+  renderManage();
+}
+
+function clearAllFaces() {
+  if (!confirm('Delete ALL face data? This cannot be undone.')) return;
+  faceData = [];
+  localStorage.setItem('face_users', JSON.stringify(faceData));
+  renderManage();
+}
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function switchTab(tab) {
+  currentTab = tab;
+  ['login', 'register', 'manage', 'otp', 'success'].forEach(function(t) {
+    var el = document.getElementById('tab-' + t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  var tabMap = { login: 0, register: 1, manage: 2, otp: 0, success: 0 };
+  var tabs = document.querySelectorAll('.tab');
+  if (tabs[tabMap[tab]]) tabs[tabMap[tab]].classList.add('active');
+
+  if (tab === 'login') { startCamera('login'); }
+  else if (tab === 'register') { startCamera('register'); }
+  else if (tab === 'manage') { renderManage(); }
+  else { stopCamera('login'); stopCamera('register'); }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('load', function() {
+  loadModels();
+});
+</script>
+</body>
+</html>
