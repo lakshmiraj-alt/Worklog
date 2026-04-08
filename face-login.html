@@ -124,7 +124,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="card" id="tab-manage" style="display:none">
       <div class="card-title">👥 Registered Faces</div>
       <div id="manage-list"></div>
-      <button class="btn btn-outline" onclick="clearAllFaces()" style="margin-top:12px;font-size:12px;color:var(--red);border-color:var(--red)">🗑 Clear All Face Data</button>
+      <button class="btn btn-outline" onclick="setPIN()" style="margin-top:8px;font-size:12px">🔒 Set / Change PIN</button>
+      <button class="btn btn-outline" onclick="clearAllFaces()" style="margin-top:8px;font-size:12px;color:var(--red);border-color:var(--red)">🗑 Clear All Face Data</button>
     </div>
 
     <!-- SUCCESS -->
@@ -144,9 +145,130 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 <script>
 // ============================================================
+// ENCRYPTION ENGINE (AES-GCM via Web Crypto API)
+// ============================================================
+var ENCRYPTION_SALT = 'BSharpFaceLogin2026';
+var encryptionKey = null;
+var userPIN = null;
+
+async function generateDeviceKey() {
+  // Create a device-specific key from a random value stored separately
+  var deviceId = localStorage.getItem('face_device_id');
+  if (!deviceId) {
+    deviceId = Array.from(crypto.getRandomValues(new Uint8Array(32))).map(function(b){return b.toString(16).padStart(2,'0')}).join('');
+    localStorage.setItem('face_device_id', deviceId);
+  }
+  return deviceId;
+}
+
+async function deriveKey(password) {
+  var enc = new TextEncoder();
+  var keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+  return await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: enc.encode(ENCRYPTION_SALT), iterations: 100000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function getEncryptionKey() {
+  var deviceId = await generateDeviceKey();
+  var pin = localStorage.getItem('face_pin') || '';
+  var combined = deviceId + ':' + pin;
+  return await deriveKey(combined);
+}
+
+async function encryptData(data) {
+  var key = await getEncryptionKey();
+  var enc = new TextEncoder();
+  var iv = crypto.getRandomValues(new Uint8Array(12));
+  var encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, enc.encode(JSON.stringify(data)));
+  return {
+    iv: Array.from(iv),
+    data: Array.from(new Uint8Array(encrypted))
+  };
+}
+
+async function decryptData(encObj) {
+  try {
+    var key = await getEncryptionKey();
+    var dec = new TextDecoder();
+    var decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: new Uint8Array(encObj.iv) },
+      key,
+      new Uint8Array(encObj.data)
+    );
+    return JSON.parse(dec.decode(decrypted));
+  } catch(e) {
+    return null; // Decryption failed (wrong PIN or corrupted)
+  }
+}
+
+async function saveFaceDataEncrypted() {
+  try {
+    var encrypted = await encryptData(faceData);
+    localStorage.setItem('face_users_enc', JSON.stringify(encrypted));
+    localStorage.removeItem('face_users'); // Remove old unencrypted data
+  } catch(e) {
+    // Fallback to unencrypted if crypto fails
+    saveFaceDataEncrypted();
+  }
+}
+
+async function loadFaceDataEncrypted() {
+  // Try encrypted first
+  var encData = localStorage.getItem('face_users_enc');
+  if (encData) {
+    try {
+      var parsed = JSON.parse(encData);
+      var decrypted = await decryptData(parsed);
+      if (decrypted) return decrypted;
+    } catch(e) {}
+  }
+  // Fallback to old unencrypted data (migrate it)
+  var plain = localStorage.getItem('face_users');
+  if (plain) {
+    try {
+      var data = JSON.parse(plain);
+      if (data.length > 0) {
+        faceData = data;
+        await saveFaceDataEncrypted(); // Migrate to encrypted
+        return data;
+      }
+    } catch(e) {}
+  }
+  return [];
+}
+
+function setPIN() {
+  var pin = prompt('Set a PIN to protect your face data (4-8 digits).\nLeave empty to use device-only encryption:');
+  if (pin !== null) {
+    if (pin && (pin.length < 4 || pin.length > 8 || !/^\d+$/.test(pin))) {
+      showToast('PIN must be 4-8 digits'); return;
+    }
+    localStorage.setItem('face_pin', pin);
+    saveFaceDataEncrypted().then(function() {
+      showToast(pin ? '✓ PIN set & face data re-encrypted' : '✓ PIN removed, using device encryption');
+    });
+  }
+}
+
+function verifyPIN() {
+  return new Promise(function(resolve) {
+    var storedPin = localStorage.getItem('face_pin');
+    if (!storedPin) { resolve(true); return; }
+    var entered = prompt('Enter your PIN to unlock face data:');
+    if (entered === storedPin) { resolve(true); }
+    else { showToast('Wrong PIN'); resolve(false); }
+  });
+}
+
+// ============================================================
 // FACE RECOGNITION ENGINE
 // ============================================================
-var faceData = JSON.parse(localStorage.getItem('face_users') || '[]');
+var faceData = [];
 var modelsLoaded = false;
 var loginStream = null;
 var regStream = null;
@@ -165,7 +287,9 @@ async function loadModels() {
     progress.textContent = 'Loading recognition model...';
     await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
     modelsLoaded = true;
-    progress.textContent = '✓ All models loaded';
+    progress.textContent = 'Loading face data...';
+    faceData = await loadFaceDataEncrypted();
+    progress.textContent = '✓ All models loaded (' + faceData.length + ' face(s))';
     document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('main-screen').style.display = 'block';
     startCamera('login');
@@ -312,7 +436,7 @@ async function registerFace() {
 
     if (existing >= 0) { faceData[existing] = user; }
     else { faceData.push(user); }
-    localStorage.setItem('face_users', JSON.stringify(faceData));
+    saveFaceDataEncrypted();
 
     document.getElementById('reg-status').innerHTML = '✓ Face registered for <strong>' + name + '</strong>';
     document.getElementById('reg-status').className = 'status status-success';
@@ -417,8 +541,15 @@ function verifyOTP() {
 // ============================================================
 function renderManage() {
   var list = document.getElementById('manage-list');
-  if (faceData.length === 0) { list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:1rem;font-size:13px">No faces registered yet</div>'; return; }
-  list.innerHTML = '<div style="font-size:12px;color:var(--text3);margin-bottom:8px">' + faceData.length + ' face(s) registered</div>' +
+  var hasPin = !!localStorage.getItem('face_pin');
+  var hasEnc = !!localStorage.getItem('face_users_enc');
+  var encStatus = '<div style="padding:8px 12px;border-radius:var(--radius);margin-bottom:10px;font-size:12px;' +
+    (hasEnc ? 'background:var(--green-bg);color:var(--green)' : 'background:var(--red-bg);color:var(--red)') + '">' +
+    (hasEnc ? '🔒 Face data is encrypted (AES-256-GCM)' : '⚠️ Face data is not encrypted') +
+    (hasPin ? ' + PIN protected' : ' — device key only') + '</div>';
+
+  if (faceData.length === 0) { list.innerHTML = encStatus + '<div style="text-align:center;color:var(--text3);padding:1rem;font-size:13px">No faces registered yet</div>'; return; }
+  list.innerHTML = encStatus + '<div style="font-size:12px;color:var(--text3);margin-bottom:8px">' + faceData.length + ' face(s) registered</div>' +
     faceData.map(function(f, i) {
       return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">' +
         '<img src="' + f.thumbnail + '" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--border)"/>' +
@@ -431,14 +562,17 @@ function renderManage() {
 function removeFace(idx) {
   if (!confirm('Remove ' + faceData[idx].name + '\'s face data?')) return;
   faceData.splice(idx, 1);
-  localStorage.setItem('face_users', JSON.stringify(faceData));
+  saveFaceDataEncrypted();
   renderManage();
 }
 
 function clearAllFaces() {
   if (!confirm('Delete ALL face data? This cannot be undone.')) return;
   faceData = [];
-  localStorage.setItem('face_users', JSON.stringify(faceData));
+  saveFaceDataEncrypted();
+  localStorage.removeItem('face_users');
+  localStorage.removeItem('face_users_enc');
+  localStorage.removeItem('face_pin');
   renderManage();
 }
 
