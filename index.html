@@ -227,6 +227,27 @@ tbody td.muted{color:var(--text2)}
 .contract-saved-list{margin-top:1rem}
 .contract-saved-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;cursor:pointer;transition:background .1s}
 .contract-saved-item:hover{background:var(--surface2)}
+/* Kanban Board */
+.kanban-board{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;min-height:400px}
+.kanban-col{min-width:240px;flex:1;background:var(--surface2);border-radius:var(--radius-lg);padding:10px;display:flex;flex-direction:column}
+.kanban-col-header{display:flex;justify-content:space-between;align-items:center;padding:8px 6px;margin-bottom:8px}
+.kanban-col-title{font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px}
+.kanban-col-count{font-size:11px;background:var(--border);color:var(--text2);border-radius:99px;padding:1px 8px;font-weight:600}
+.kanban-cards{flex:1;min-height:60px}
+.kanban-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;cursor:grab;box-shadow:var(--shadow);transition:box-shadow .15s,transform .15s}
+.kanban-card:active{cursor:grabbing;box-shadow:0 4px 16px rgba(0,0,0,.12);transform:translateY(-2px)}
+.kanban-card.dragging{opacity:.4}
+.kanban-card-title{font-weight:600;font-size:13px;margin-bottom:4px}
+.kanban-card-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.kanban-card-meta .badge{font-size:9px;padding:2px 6px}
+.kanban-card-assignee{font-size:11px;color:var(--text3)}
+.kanban-card-sprint{font-size:10px;color:var(--text3);margin-top:4px}
+.kanban-col.drag-over{background:var(--accent-light);border:2px dashed var(--accent)}
+.kanban-add-form{padding:8px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:8px}
+.kanban-add-form input,.kanban-add-form select,.kanban-add-form textarea{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:12px;margin-bottom:6px}
+.kanban-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.kanban-filters select,.kanban-filters input{padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:12px}
+@media(max-width:768px){.kanban-board{flex-direction:column}.kanban-col{min-width:100%}}
 @media(max-width:768px){
   .notes-sidebar{flex-direction:column;min-height:auto}
   .notes-list-panel{width:100%;border-right:none;border-bottom:1px solid var(--border);padding-right:0;padding-bottom:1rem;max-height:200px;overflow-y:auto}
@@ -827,6 +848,40 @@ tbody td.muted{color:var(--text2)}
       </div>
     </div>
   </div>
+</div>
+
+<!-- ===== KANBAN SPRINT BOARD ===== -->
+<div class="page" id="page-kanban">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:1rem">
+    <div>
+      <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">Sprint Board</div>
+      <div style="color:var(--text2);font-size:13.5px">Drag & drop tasks across columns to track progress</div>
+    </div>
+    <button class="btn-primary" style="padding:9px 20px;border-radius:var(--radius-lg);border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;color:#fff;background:var(--accent)" onclick="showAddTask()">+ Add Task</button>
+  </div>
+  <div class="kanban-filters">
+    <select id="kb-filter-sprint" onchange="renderKanban()"><option value="">All Sprints</option></select>
+    <select id="kb-filter-assignee" onchange="renderKanban()"><option value="">All Members</option></select>
+    <select id="kb-filter-priority" onchange="renderKanban()"><option value="">All Priorities</option><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
+    <input type="text" id="kb-filter-search" placeholder="Search tasks..." oninput="renderKanban()" style="width:140px"/>
+  </div>
+  <!-- Add task form (hidden by default) -->
+  <div class="card" id="kanban-add-card" style="display:none;margin-bottom:12px">
+    <div class="card-title"><span class="card-title-icon">➕</span>New Task</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="field" style="grid-column:1/-1"><label>Title</label><input type="text" id="kb-add-title" placeholder="Task name"/></div>
+      <div class="field"><label>Assignee</label><select id="kb-add-assignee"><option value="">Unassigned</option></select></div>
+      <div class="field"><label>Priority</label><select id="kb-add-priority"><option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option></select></div>
+      <div class="field"><label>Sprint</label><input type="text" id="kb-add-sprint" placeholder="e.g. Sprint 5"/></div>
+      <div class="field"><label>Due Date</label><input type="date" id="kb-add-due"/></div>
+      <div class="field" style="grid-column:1/-1"><label>Description</label><textarea id="kb-add-desc" rows="2" placeholder="Details..."></textarea></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-primary" style="padding:8px 18px;border-radius:var(--radius-lg);border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;color:#fff;background:var(--accent)" onclick="addKanbanTask()">Add Task</button>
+      <button class="btn-outline" style="padding:8px 14px;border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--surface);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;color:var(--text2)" onclick="hideAddTask()">Cancel</button>
+    </div>
+  </div>
+  <div class="kanban-board" id="kanban-board"></div>
 </div>
 
 <!-- ===== AI ASSISTANT ===== -->
@@ -1478,6 +1533,7 @@ function buildNavTabs() {
   if (perms.indexOf('mysubs') !== -1) html += navBtn('mysubs', '📋', 'My Submissions');
   if (perms.indexOf('expenses') !== -1) html += navBtn('expenses', '💰', 'Expenses');
   html += navBtn('notes', '📓', 'Notes');
+  html += navBtn('kanban', '📋', 'Sprint Board');
   if (perms.indexOf('dashboard') !== -1 && !currentUser.isAdmin) html += navBtn('dashboard', '📊', 'Dashboard');
   if (perms.indexOf('report') !== -1 && !currentUser.isAdmin) html += navBtn('report', '📈', 'Weekly Report');
   // Admin section
@@ -2045,6 +2101,7 @@ function doSwitchPage(page,btn) {
   if (page==='mysubs') renderMySubmissions();
   if (page==='expenses') renderMyExpenses();
   if (page==='notes') renderNotesList();
+  if (page==='kanban') renderKanban();
   if (page==='expmanage') renderExpenseAdmin();
   if (page==='goals') renderGoals();
   if (page==='employees') renderEmployeeManager();
@@ -2055,6 +2112,168 @@ function doSwitchPage(page,btn) {
 }
 
 // ============================================================
+// ============================================================
+// KANBAN SPRINT BOARD
+// ============================================================
+var kanbanTasks = JSON.parse(localStorage.getItem('wl_kanban') || '[]');
+var kanbanCounter = parseInt(localStorage.getItem('wl_kanban_counter') || '0');
+var KANBAN_COLS = ['To Do','In Progress','Review','Done'];
+var draggedTaskId = null;
+
+function saveKanban() { localStorage.setItem('wl_kanban', JSON.stringify(kanbanTasks)); localStorage.setItem('wl_kanban_counter', String(kanbanCounter)); }
+
+function showAddTask() {
+  document.getElementById('kanban-add-card').style.display = 'block';
+  populateKanbanDropdowns();
+  document.getElementById('kb-add-title').focus();
+}
+function hideAddTask() { document.getElementById('kanban-add-card').style.display = 'none'; }
+
+function populateKanbanDropdowns() {
+  // Assignee dropdown
+  var assigneeSel = document.getElementById('kb-add-assignee');
+  assigneeSel.innerHTML = '<option value="">Unassigned</option>' + ALL_EMPLOYEES.map(function(e){ return '<option>'+e+'</option>'; }).join('');
+  // Filter dropdowns
+  var fAssignee = document.getElementById('kb-filter-assignee');
+  fAssignee.innerHTML = '<option value="">All Members</option>' + ALL_EMPLOYEES.map(function(e){ return '<option>'+e+'</option>'; }).join('');
+  // Sprint filter
+  var sprints = {};
+  kanbanTasks.forEach(function(t){ if(t.sprint) sprints[t.sprint]=1; });
+  var fSprint = document.getElementById('kb-filter-sprint');
+  fSprint.innerHTML = '<option value="">All Sprints</option>' + Object.keys(sprints).sort().map(function(s){ return '<option>'+s+'</option>'; }).join('');
+}
+
+function addKanbanTask() {
+  var title = document.getElementById('kb-add-title').value.trim();
+  if (!title) { showToast('Title is required',true); return; }
+  kanbanCounter++;
+  var task = {
+    id: kanbanCounter,
+    title: title,
+    assignee: document.getElementById('kb-add-assignee').value,
+    priority: document.getElementById('kb-add-priority').value,
+    sprint: document.getElementById('kb-add-sprint').value.trim(),
+    due: document.getElementById('kb-add-due').value,
+    desc: document.getElementById('kb-add-desc').value.trim(),
+    status: 'To Do',
+    created: new Date().toISOString(),
+    creator: currentUser.name
+  };
+  kanbanTasks.push(task); saveKanban();
+  showToast('✓ Task #'+task.id+' added');
+  logAudit('log','<strong>'+currentUser.name+'</strong> added sprint task: '+title);
+  document.getElementById('kb-add-title').value='';
+  document.getElementById('kb-add-desc').value='';
+  hideAddTask();
+  renderKanban();
+}
+
+function renderKanban() {
+  populateKanbanDropdowns();
+  var fSprint = (document.getElementById('kb-filter-sprint')||{}).value||'';
+  var fAssignee = (document.getElementById('kb-filter-assignee')||{}).value||'';
+  var fPriority = (document.getElementById('kb-filter-priority')||{}).value||'';
+  var fSearch = ((document.getElementById('kb-filter-search')||{}).value||'').toLowerCase();
+
+  var filtered = kanbanTasks.filter(function(t){
+    if(fSprint && t.sprint!==fSprint) return false;
+    if(fAssignee && t.assignee!==fAssignee) return false;
+    if(fPriority && t.priority!==fPriority) return false;
+    if(fSearch && t.title.toLowerCase().indexOf(fSearch)===-1) return false;
+    return true;
+  });
+
+  var colColors = {'To Do':'var(--blue)','In Progress':'var(--yellow)','Review':'var(--purple,#6B3A8C)','Done':'var(--green)'};
+  var board = document.getElementById('kanban-board');
+  board.innerHTML = KANBAN_COLS.map(function(col){
+    var colTasks = filtered.filter(function(t){ return t.status===col; });
+    var priorityOrder = {Critical:0,High:1,Medium:2,Low:3};
+    colTasks.sort(function(a,b){ return (priorityOrder[a.priority]||3)-(priorityOrder[b.priority]||3); });
+    return '<div class="kanban-col" data-col="'+col+'" ondragover="kanbanDragOver(event)" ondrop="kanbanDrop(event,\''+col+'\')" ondragleave="kanbanDragLeave(event)">'+
+      '<div class="kanban-col-header"><div class="kanban-col-title"><span style="width:8px;height:8px;border-radius:50%;background:'+colColors[col]+'"></span>'+col+'</div><span class="kanban-col-count">'+colTasks.length+'</span></div>'+
+      '<div class="kanban-cards">'+
+      colTasks.map(function(t){
+        var priClass = t.priority.toLowerCase();
+        var dueStr = t.due ? fmtDate(t.due) : '';
+        var overdue = t.due && t.status!=='Done' && new Date(t.due)<new Date() ? ' style="color:var(--red);font-weight:600"' : '';
+        return '<div class="kanban-card" draggable="true" ondragstart="kanbanDragStart(event,'+t.id+')" ondragend="kanbanDragEnd(event)" onclick="openKanbanTask('+t.id+')">'+
+          '<div class="kanban-card-title">'+t.title+'</div>'+
+          '<div class="kanban-card-meta"><span class="badge badge-'+priClass+'">'+t.priority+'</span>'+(dueStr?'<span'+overdue+' style="font-size:10px">📅 '+dueStr+'</span>':'')+'</div>'+
+          (t.assignee?'<div class="kanban-card-assignee">👤 '+t.assignee+'</div>':'')+
+          (t.sprint?'<div class="kanban-card-sprint">🏃 '+t.sprint+'</div>':'')+
+        '</div>';
+      }).join('')+
+      '</div></div>';
+  }).join('');
+}
+
+// Drag & drop
+function kanbanDragStart(e,id) { draggedTaskId=id; e.target.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }
+function kanbanDragEnd(e) { e.target.classList.remove('dragging'); draggedTaskId=null; document.querySelectorAll('.kanban-col').forEach(function(c){c.classList.remove('drag-over');}); }
+function kanbanDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function kanbanDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function kanbanDrop(e,col) {
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  if(!draggedTaskId) return;
+  var task = kanbanTasks.find(function(t){ return t.id===draggedTaskId; });
+  if(task && task.status!==col) {
+    var oldStatus = task.status;
+    task.status = col;
+    task.updated = new Date().toISOString();
+    saveKanban();
+    logAudit('log','<strong>'+currentUser.name+'</strong> moved task #'+task.id+' from '+oldStatus+' → '+col);
+    showToast('Task moved to '+col);
+    renderKanban();
+  }
+}
+
+// Task detail modal
+function openKanbanTask(id) {
+  var t = kanbanTasks.find(function(x){ return x.id===id; });
+  if(!t) return;
+  var priClass = t.priority.toLowerCase();
+  var modal = document.getElementById('attach-modal');
+  var box = document.getElementById('attach-modal-box');
+  box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
+    '<div style="font-weight:700;font-size:16px">Task #'+t.id+'</div>'+
+    '<button onclick="closeAttachment()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 14px;cursor:pointer;font-size:13px">Close</button></div>'+
+    '<div class="field"><label>Title</label><input type="text" id="kt-title" value="'+t.title+'"/></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+      '<div class="field"><label>Status</label><select id="kt-status">'+KANBAN_COLS.map(function(c){return '<option'+(t.status===c?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'+
+      '<div class="field"><label>Priority</label><select id="kt-priority"><option'+(t.priority==='Low'?' selected':'')+'>Low</option><option'+(t.priority==='Medium'?' selected':'')+'>Medium</option><option'+(t.priority==='High'?' selected':'')+'>High</option><option'+(t.priority==='Critical'?' selected':'')+'>Critical</option></select></div>'+
+      '<div class="field"><label>Assignee</label><select id="kt-assignee"><option value="">Unassigned</option>'+ALL_EMPLOYEES.map(function(e){return '<option'+(t.assignee===e?' selected':'')+'>'+e+'</option>';}).join('')+'</select></div>'+
+      '<div class="field"><label>Sprint</label><input type="text" id="kt-sprint" value="'+(t.sprint||'')+'"/></div>'+
+      '<div class="field"><label>Due Date</label><input type="date" id="kt-due" value="'+(t.due||'')+'"/></div>'+
+      '<div class="field"><label>Created by</label><input type="text" value="'+t.creator+'" disabled style="color:var(--text3)"/></div>'+
+    '</div>'+
+    '<div class="field"><label>Description</label><textarea id="kt-desc" rows="3">'+(t.desc||'')+'</textarea></div>'+
+    '<div style="display:flex;gap:8px"><button class="submit-btn" style="width:auto;padding:9px 20px" onclick="saveKanbanTask('+t.id+')">Save Changes</button>'+
+    '<button onclick="deleteKanbanTask('+t.id+')" style="padding:9px 14px;border:1px solid var(--red);border-radius:var(--radius-lg);background:var(--surface);cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--red)">Delete</button></div>';
+  modal.style.display='flex';
+}
+
+function saveKanbanTask(id) {
+  var t = kanbanTasks.find(function(x){ return x.id===id; });
+  if(!t) return;
+  t.title = document.getElementById('kt-title').value.trim()||'Untitled';
+  t.status = document.getElementById('kt-status').value;
+  t.priority = document.getElementById('kt-priority').value;
+  t.assignee = document.getElementById('kt-assignee').value;
+  t.sprint = document.getElementById('kt-sprint').value.trim();
+  t.due = document.getElementById('kt-due').value;
+  t.desc = document.getElementById('kt-desc').value.trim();
+  t.updated = new Date().toISOString();
+  saveKanban(); closeAttachment(); renderKanban();
+  showToast('✓ Task updated');
+}
+
+function deleteKanbanTask(id) {
+  if(!confirm('Delete this task?')) return;
+  kanbanTasks = kanbanTasks.filter(function(t){ return t.id!==id; });
+  saveKanban(); closeAttachment(); renderKanban();
+  showToast('Task deleted');
+}
+
 // ============================================================
 // NOTES (Enhanced OneNote-like)
 // ============================================================
