@@ -2730,15 +2730,22 @@ async function submitExpense() {
     });
     showToast('✓ Expense claim of ₹'+amount+' submitted');
     logAudit('expense', '<strong>' + currentUser.name + '</strong> submitted expense claim — ₹' + amount + ' (' + category + ')');
+    // Add to local data immediately so employee sees it
+    expenseData.unshift({
+      id: String(id), date: date, employee: currentUser.name, team: currentUser.team,
+      email: currentUser.email.toLowerCase(), category: category, amount: amount,
+      reason: reason, status: 'Pending', attachment: fileData, attachName: fileName
+    });
     document.getElementById('exp-date').valueAsDate = new Date();
     document.getElementById('exp-amount').value = '';
     document.getElementById('exp-reason').value = '';
     document.getElementById('exp-file').value = '';
     document.getElementById('exp-file-preview').innerHTML = '';
-    // Clear cache so next fetch gets fresh data
+    // Render immediately from local data
+    renderMyExpensesFromData();
+    // Clear cache so next full fetch gets fresh data from sheet
     localStorage.removeItem('wl_exp_cache');
     _expLastFetched = 0;
-    setTimeout(function(){ renderMyExpenses(); }, 3000);
   } catch(e) { showToast('Error submitting expense',true); }
   finally { btn.disabled = false; btn.textContent = 'Submit claim →'; }
 }
@@ -2773,24 +2780,31 @@ async function renderMyExpenses() {
   tbody.innerHTML = '<tr class="loading-row"><td colspan="6"><span class="spinner"></span>Loading...</td></tr>';
   try {
     expenseData = await fetchExpenses();
-    var my = expenseData.filter(function(e){ return e.email.toLowerCase() === currentUser.email.toLowerCase(); }).sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
-    var statusClass = {'Pending':'status-pending','Approved':'status-approved','Paid':'status-paid','Rejected':'status-rejected'};
-    if (my.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
-    empty.style.display = 'none';
-    tbody.innerHTML = my.map(function(e) {
-      var attachHtml = e.attachment ? '<a class="attach-link" onclick="viewAttachment(\''+e.id+'\')">📎 '+( e.attachName||'View')+'</a>' : '<span style="color:var(--text3);font-size:12px">—</span>';
-      return '<tr>'+
-        '<td class="muted">'+fmtDate(e.date)+'</td>'+
-        '<td>'+e.category+'</td>'+
-        '<td style="font-weight:600">₹'+e.amount.toLocaleString('en-IN')+'</td>'+
-        '<td class="muted" style="max-width:200px">'+e.reason+'</td>'+
-        '<td>'+attachHtml+'</td>'+
-        '<td><span class="badge '+(statusClass[e.status]||'badge-other')+'">'+e.status+'</span></td>'+
-      '</tr>';
-    }).join('');
+    renderMyExpensesFromData();
   } catch(e) {
     tbody.innerHTML = '<tr class="loading-row"><td colspan="6" style="color:var(--red)">Could not load expenses</td></tr>';
   }
+}
+
+function renderMyExpensesFromData() {
+  if (!currentUser) return;
+  var tbody = document.getElementById('exp-my-tbody');
+  var empty = document.getElementById('exp-my-empty');
+  var my = expenseData.filter(function(e){ return e.email.toLowerCase() === currentUser.email.toLowerCase(); }).sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+  var statusClass = {'Pending':'status-pending','Approved':'status-approved','Paid':'status-paid','Rejected':'status-rejected'};
+  if (my.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = my.map(function(e) {
+    var attachHtml = e.attachment ? '<a class="attach-link" onclick="viewAttachment(\''+e.id+'\')">📎 '+(e.attachName||'View')+'</a>' : '<span style="color:var(--text3);font-size:12px">—</span>';
+    return '<tr>'+
+      '<td class="muted">'+fmtDate(e.date)+'</td>'+
+      '<td>'+e.category+'</td>'+
+      '<td style="font-weight:600">₹'+e.amount.toLocaleString('en-IN')+'</td>'+
+      '<td class="muted" style="max-width:200px">'+e.reason+'</td>'+
+      '<td>'+attachHtml+'</td>'+
+      '<td><span class="badge '+(statusClass[e.status]||'badge-other')+'">'+e.status+'</span></td>'+
+    '</tr>';
+  }).join('');
 }
 
 // ============================================================
