@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>WorkLog — Daily HR Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
 :root{--bg:#F7F5F0;--surface:#fff;--surface2:#F2EFE9;--border:#E0DBD1;--text:#1A1714;--text2:#6B6560;--text3:#9E9890;--accent:#C4521A;--accent-light:#F9EDE6;--tech:#1A4E8C;--tech-bg:#E8F0FA;--cs:#1A7A4A;--cs-bg:#E6F4EC;--mkt:#8C5A1A;--mkt-bg:#FAF0E6;--red:#C0392B;--red-bg:#FDECEA;--radius:10px;--radius-lg:16px;--shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -405,7 +406,78 @@ tbody td.muted{color:var(--text2)}
 <main>
 
 <!-- ===== SUBMIT ===== -->
-<div class="page active" id="page-submit">
+<!-- ===== HOME DASHBOARD (Everyone) ===== -->
+<div class="page active" id="page-home">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:1rem">
+    <div>
+      <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:2px" id="home-greeting">Welcome!</div>
+      <div style="color:var(--text2);font-size:13.5px" id="home-subtext">Here's your performance overview</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="home-period" onchange="renderHomeDashboard()" style="padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:12px">
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+      </select>
+      <button class="submit-btn" style="width:auto;padding:8px 18px;font-size:12px" onclick="switchPage('submit',document.querySelector('.nav-tab'))">📝 Submit Log</button>
+    </div>
+  </div>
+
+  <!-- KPI Cards Row -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:1rem" id="home-kpi-row"></div>
+
+  <!-- Charts Row -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
+    <div class="card" style="padding:1rem">
+      <div class="card-title" style="font-size:13px"><span class="card-title-icon">📊</span>Hours Trend (Daily)</div>
+      <canvas id="home-chart-trend" height="200"></canvas>
+    </div>
+    <div class="card" style="padding:1rem">
+      <div class="card-title" style="font-size:13px"><span class="card-title-icon">🍩</span>Hours by Team</div>
+      <canvas id="home-chart-team" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Second Row -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
+    <div class="card" style="padding:1rem">
+      <div class="card-title" style="font-size:13px"><span class="card-title-icon">📈</span>Tasks by Category</div>
+      <canvas id="home-chart-tasks" height="200"></canvas>
+    </div>
+    <div class="card" style="padding:1rem">
+      <div class="card-title" style="font-size:13px"><span class="card-title-icon">👥</span>Submission Rate</div>
+      <canvas id="home-chart-submission" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Announcements -->
+  <div class="card" id="home-announcements-card" style="padding:1rem">
+    <div class="card-title" style="font-size:13px"><span class="card-title-icon">📢</span>Announcements</div>
+    <div id="home-announcements"></div>
+    <div id="home-announce-form" style="display:none;margin-top:10px">
+      <div style="display:flex;gap:6px">
+        <input type="text" id="home-announce-text" placeholder="Type announcement..." style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px"/>
+        <button class="submit-btn" style="width:auto;padding:8px 16px" onclick="postAnnouncement()">Post</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaderboard + Activity Feed -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
+    <div class="card" style="padding:1rem">
+      <div class="card-title" style="font-size:13px"><span class="card-title-icon">🏆</span>Leaderboard</div>
+      <div class="table-wrap">
+        <table><thead><tr><th>#</th><th>Employee</th><th>Team</th><th>Hours</th><th>Tasks</th></tr></thead>
+        <tbody id="home-leaderboard"></tbody></table>
+      </div>
+    </div>
+    <div class="card" style="padding:1rem">
+      <div class="card-title" style="font-size:13px"><span class="card-title-icon">📋</span>Today's Activity</div>
+      <div id="home-activity-feed" style="max-height:300px;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-submit">
   <div style="margin-bottom:1.5rem">
     <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">Daily Work Log</div>
     <div style="color:var(--text2);font-size:13.5px">Fill in what you worked on today and how long you spent.</div>
@@ -1323,7 +1395,7 @@ function detectProvider(key) {
 }
 
 // Email sending via AWS SES (URL stored in localStorage, not in code)
-function getSESUrl() { return localStorage.getItem('wl_ses_url') || ''; }
+function getSESUrl() { return localStorage.getItem('wl_ses_url') || 'https://loqyb9nn99.execute-api.us-east-1.amazonaws.com/send-email'; }
 
 async function sendSESEmail(type, to_email, to_name, subject, body_text) {
   var sesUrl = getSESUrl();
@@ -1535,6 +1607,7 @@ function applyLogin() {
     if (nameSelect.options[i].text === currentUser.name) { nameSelect.selectedIndex = i; autoFillTeam(); break; }
   }
   buildNavTabs();
+  renderHomeDashboard();
   if (currentUser.isAdmin) {
     populateExpenseFilters();
     scheduleReminderCheck();
@@ -1552,8 +1625,9 @@ function buildNavTabs() {
   var html = '';
   var perms = currentUser.perms || '';
   // Employee section — based on permissions
+  html += navBtn('home', '🏠', 'Home', true);
   html += '<div class="nav-section">Employee</div>';
-  if (perms.indexOf('submit') !== -1) html += navBtn('submit', '📝', 'Submit Log', true);
+  if (perms.indexOf('submit') !== -1) html += navBtn('submit', '📝', 'Submit Log');
   if (perms.indexOf('mysubs') !== -1) html += navBtn('mysubs', '📋', 'My Submissions');
   if (perms.indexOf('expenses') !== -1) html += navBtn('expenses', '💰', 'Expenses');
   html += navBtn('notes', '📓', 'Notes');
@@ -2119,6 +2193,7 @@ function doSwitchPage(page,btn) {
   // Close sidebar on mobile
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebar-overlay').classList.remove('open');
+  if (page==='home') renderHomeDashboard();
   if (page==='dashboard') renderDashboard();
   if (page==='report') renderReport();
   if (page==='leave') { renderLeaveTable(); renderLeaveMetrics(); }
@@ -2137,6 +2212,183 @@ function doSwitchPage(page,btn) {
 
 // ============================================================
 // ============================================================
+// ============================================================
+// HOME DASHBOARD (Zoho Analytics Style)
+// ============================================================
+var announcements = JSON.parse(localStorage.getItem('wl_announcements') || '[]');
+var homeCharts = {};
+
+async function renderHomeDashboard() {
+  var hour = new Date().getHours();
+  var greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('home-greeting').textContent = greeting + ', ' + (currentUser ? currentUser.name.split(' ')[0] : '') + '!';
+  if (currentUser && currentUser.isAdmin) document.getElementById('home-announce-form').style.display = 'block';
+  renderAnnouncements();
+
+  var data = [];
+  try { data = await fetchFromSheet(); } catch(e){}
+  var today = todayISO();
+  var period = (document.getElementById('home-period')||{}).value || 'week';
+  var periodData = period === 'week' ? data.filter(function(r){ return inWeek(r[0], 0); }) : data.filter(function(r){ var d = toDateObj(r[0]); var now = new Date(); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
+  var prevData = period === 'week' ? data.filter(function(r){ return inWeek(r[0], -1); }) : data.filter(function(r){ var d = toDateObj(r[0]); var now = new Date(); now.setMonth(now.getMonth()-1); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
+
+  var myName = currentUser ? currentUser.name : '';
+  var myData = periodData.filter(function(r){ return r[2] === myName; });
+  var myHours = myData.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+  var myPrevHours = prevData.filter(function(r){ return r[2] === myName; }).reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+  var totalHours = periodData.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+  var prevTotalHours = prevData.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+  var activeEmps = new Set(periodData.map(function(r){ return r[2]; })).size;
+  var submittedToday = data.some(function(r){ return r[2] === myName && toISO(toDateObj(r[0])) === today; });
+
+  // Streak
+  var streak = 0; var checkDate = new Date();
+  for (var i = 0; i < 30; i++) {
+    checkDate.setDate(checkDate.getDate() - (i === 0 ? 0 : 1));
+    if (checkDate.getDay() === 0 || checkDate.getDay() === 6) continue;
+    if (data.some(function(r){ return r[2] === myName && toISO(toDateObj(r[0])) === toISO(checkDate); })) streak++; else if (i > 0) break;
+  }
+
+  // KPI Cards with comparison arrows
+  function kpiCard(icon, label, value, sub, prev, color) {
+    var diff = prev !== null ? value - prev : null;
+    var arrow = diff !== null ? (diff > 0 ? '<span style="color:var(--green);font-size:11px">▲ +'+Math.abs(diff).toFixed(1)+'</span>' : diff < 0 ? '<span style="color:var(--red);font-size:11px">▼ '+Math.abs(diff).toFixed(1)+'</span>' : '<span style="color:var(--text3);font-size:11px">— same</span>') : '';
+    return '<div class="card" style="padding:14px;position:relative;overflow:hidden"><div style="position:absolute;top:-8px;right:-8px;font-size:48px;opacity:.08">'+icon+'</div><div style="font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">'+label+'</div><div style="font-size:28px;font-weight:700;color:'+(color||'var(--text)')+';margin-bottom:2px">'+value+'</div><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:var(--text3)">'+sub+'</span>'+arrow+'</div></div>';
+  }
+
+  document.getElementById('home-kpi-row').innerHTML =
+    kpiCard('✓', 'Today', submittedToday ? '✓' : '✗', submittedToday ? 'Submitted' : 'Not yet', null, submittedToday ? 'var(--green)' : 'var(--red)') +
+    kpiCard('⏱', 'My Hours', myHours+'h', myData.length+' tasks', myPrevHours, 'var(--accent)') +
+    kpiCard('🔥', 'Streak', streak+' days', 'consecutive', null, 'var(--accent)') +
+    kpiCard('👥', 'Team Hours', totalHours+'h', activeEmps+'/'+ALL_EMPLOYEES.length+' active', prevTotalHours, 'var(--blue,#1A4E8C)') +
+    kpiCard('📊', 'Total Tasks', periodData.length, period === 'week' ? 'this week' : 'this month', prevData.length, 'var(--text)');
+
+  // Chart 1: Hours Trend (line chart)
+  var dayMap = {};
+  var last7 = [];
+  for (var d = 6; d >= 0; d--) { var dt = new Date(); dt.setDate(dt.getDate()-d); last7.push(toISO(dt)); }
+  last7.forEach(function(day){ dayMap[day] = { me: 0, team: 0 }; });
+  data.forEach(function(r) {
+    var ds = toISO(toDateObj(r[0]));
+    if (dayMap[ds] !== undefined) {
+      dayMap[ds].team += parseFloat(r[8]) || 0;
+      if (r[2] === myName) dayMap[ds].me += parseFloat(r[8]) || 0;
+    }
+  });
+  renderChart('home-chart-trend', 'line', {
+    labels: last7.map(function(d){ return new Date(d).toLocaleDateString('en-IN',{weekday:'short',day:'numeric'}); }),
+    datasets: [
+      { label: 'My Hours', data: last7.map(function(d){ return dayMap[d].me; }), borderColor: '#C4521A', backgroundColor: 'rgba(196,82,26,.1)', fill: true, tension: .4 },
+      { label: 'Team Avg', data: last7.map(function(d){ return activeEmps ? +(dayMap[d].team/activeEmps).toFixed(1) : 0; }), borderColor: '#1A4E8C', backgroundColor: 'rgba(26,78,140,.1)', fill: true, tension: .4, borderDash: [5,3] }
+    ]
+  });
+
+  // Chart 2: Hours by Team (doughnut)
+  var teamHrs = {};
+  periodData.forEach(function(r){ teamHrs[r[3]] = (teamHrs[r[3]]||0) + (parseFloat(r[8])||0); });
+  var teamColors = { Technical: '#1A4E8C', 'Customer Success': '#1A7A4A', Marketing: '#8C5A1A', Director: '#6B3A8C', Admin: '#C4521A' };
+  renderChart('home-chart-team', 'doughnut', {
+    labels: Object.keys(teamHrs),
+    datasets: [{ data: Object.values(teamHrs), backgroundColor: Object.keys(teamHrs).map(function(t){ return teamColors[t] || '#9E9890'; }), borderWidth: 2, borderColor: '#fff' }]
+  }, { cutout: '60%' });
+
+  // Chart 3: Tasks by Sprint/DayType (bar)
+  var sprintMap = {};
+  periodData.forEach(function(r){ var s = r[7] || r[4] || 'Other'; sprintMap[s] = (sprintMap[s]||0) + 1; });
+  var sortedSprints = Object.entries(sprintMap).sort(function(a,b){ return b[1]-a[1]; }).slice(0,8);
+  renderChart('home-chart-tasks', 'bar', {
+    labels: sortedSprints.map(function(e){ return e[0]; }),
+    datasets: [{ label: 'Tasks', data: sortedSprints.map(function(e){ return e[1]; }), backgroundColor: '#C4521A', borderRadius: 6, barThickness: 20 }]
+  }, { indexAxis: 'y' });
+
+  // Chart 4: Submission rate (bar - last 5 working days)
+  var workDays = [];
+  var wd = new Date();
+  while (workDays.length < 5) { if (wd.getDay() !== 0 && wd.getDay() !== 6) workDays.unshift(toISO(wd)); wd.setDate(wd.getDate()-1); }
+  var subRates = workDays.map(function(day) {
+    var submitted = new Set(data.filter(function(r){ return toISO(toDateObj(r[0])) === day; }).map(function(r){ return r[2]; })).size;
+    return Math.round((submitted / ALL_EMPLOYEES.length) * 100);
+  });
+  renderChart('home-chart-submission', 'bar', {
+    labels: workDays.map(function(d){ return new Date(d).toLocaleDateString('en-IN',{weekday:'short',day:'numeric'}); }),
+    datasets: [{ label: 'Submission %', data: subRates, backgroundColor: subRates.map(function(v){ return v >= 80 ? '#1A7A4A' : v >= 50 ? '#C4521A' : '#C0392B'; }), borderRadius: 6 }]
+  }, { scales: { y: { max: 100, ticks: { callback: function(v){ return v+'%'; } } } } });
+
+  // Activity feed
+  var todayEntries = data.filter(function(r){ return toISO(toDateObj(r[0])) === today; });
+  var actFeed = document.getElementById('home-activity-feed');
+  if (todayEntries.length === 0) {
+    actFeed.innerHTML = '<div style="text-align:center;color:var(--text3);padding:2rem;font-size:13px">No submissions yet today</div>';
+  } else {
+    var grouped = {};
+    todayEntries.forEach(function(r){ if (!grouped[r[2]]) grouped[r[2]] = []; grouped[r[2]].push(r); });
+    actFeed.innerHTML = Object.keys(grouped).sort().map(function(emp) {
+      var entries = grouped[emp];
+      var totalH = entries.reduce(function(s,r){return s+(parseFloat(r[8])||0);},0);
+      return '<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div><strong style="font-size:12px">' + emp + '</strong><div style="font-size:11px;color:var(--text2);margin-top:1px">' + entries.map(function(r){return r[5];}).join(', ') + '</div></div><div style="font-weight:700;color:var(--accent);font-size:13px">' + totalH + 'h</div></div>';
+    }).join('');
+  }
+
+  // Leaderboard
+  var empStats = {};
+  periodData.forEach(function(r) {
+    if (!empStats[r[2]]) empStats[r[2]] = { name: r[2], team: r[3], hours: 0, tasks: 0 };
+    empStats[r[2]].hours += parseFloat(r[8]) || 0;
+    empStats[r[2]].tasks++;
+  });
+  var leaderboard = Object.values(empStats).sort(function(a,b){ return b.hours - a.hours; });
+  var medals = ['🥇','🥈','🥉'];
+  var tClass = {'Technical':'badge-tech','Customer Success':'badge-cs','Marketing':'badge-mkt'};
+  var lbTbody = document.getElementById('home-leaderboard');
+  if (leaderboard.length === 0) { lbTbody.innerHTML = '<tr><td colspan="5" class="empty-state">No data</td></tr>'; }
+  else {
+    lbTbody.innerHTML = leaderboard.slice(0,10).map(function(e, i) {
+      return '<tr'+(e.name===myName?' style="background:var(--accent-light)"':'')+'><td style="font-size:15px">'+(medals[i]||(i+1))+'</td><td style="font-weight:'+(e.name===myName?'700':'500')+'">'+e.name+(e.name===myName?' ★':'')+'</td><td><span class="badge '+(tClass[e.team]||'badge-other')+'">'+e.team+'</span></td><td style="font-weight:600">'+e.hours+'h</td><td>'+e.tasks+'</td></tr>';
+    }).join('');
+  }
+}
+
+function renderChart(canvasId, type, data, extraOpts) {
+  if (homeCharts[canvasId]) homeCharts[canvasId].destroy();
+  var ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+  var opts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: type !== 'bar', position: 'bottom', labels: { boxWidth: 12, font: { size: 11, family: 'DM Sans' } } } },
+    scales: type === 'doughnut' ? {} : { x: { grid: { display: false }, ticks: { font: { size: 10, family: 'DM Sans' } } }, y: { grid: { color: '#E0DBD133' }, ticks: { font: { size: 10, family: 'DM Sans' } } } }
+  };
+  if (extraOpts) {
+    if (extraOpts.cutout) opts.cutout = extraOpts.cutout;
+    if (extraOpts.indexAxis) opts.indexAxis = extraOpts.indexAxis;
+    if (extraOpts.scales) { for (var k in extraOpts.scales) { opts.scales[k] = Object.assign(opts.scales[k]||{}, extraOpts.scales[k]); } }
+  }
+  homeCharts[canvasId] = new Chart(ctx, { type: type, data: data, options: opts });
+}
+
+// Announcements
+function renderAnnouncements() {
+  var el = document.getElementById('home-announcements');
+  if (announcements.length === 0) { el.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:4px">No announcements</div>'; return; }
+  el.innerHTML = announcements.slice(-5).reverse().map(function(a, i) {
+    var removeBtn = currentUser && currentUser.isAdmin ? ' <button onclick="removeAnnouncement('+(announcements.length-1-i)+')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px">×</button>' : '';
+    return '<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;display:flex;justify-content:space-between;align-items:center"><div><strong style="color:var(--accent)">📢</strong> '+a.text+' <span style="font-size:10px;color:var(--text3)">'+a.author+' · '+fmtDate(a.date)+'</span></div>'+removeBtn+'</div>';
+  }).join('');
+}
+function postAnnouncement() {
+  var text = document.getElementById('home-announce-text').value.trim();
+  if (!text) return;
+  announcements.push({ text: text, author: currentUser.name, date: todayISO() });
+  localStorage.setItem('wl_announcements', JSON.stringify(announcements));
+  document.getElementById('home-announce-text').value = '';
+  renderAnnouncements();
+  showToast('✓ Announcement posted');
+}
+function removeAnnouncement(idx) {
+  announcements.splice(idx, 1);
+  localStorage.setItem('wl_announcements', JSON.stringify(announcements));
+  renderAnnouncements();
+}
+
 // KANBAN SPRINT BOARD
 // ============================================================
 var kanbanTasks = JSON.parse(localStorage.getItem('wl_kanban') || '[]');
