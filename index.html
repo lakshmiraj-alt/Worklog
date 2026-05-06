@@ -1198,9 +1198,27 @@ tbody td.muted{color:var(--text2)}
     <div id="key-status" style="margin-top:12px;font-size:12px"></div>
   </div>
   <div class="card">
+    <div class="card-title"><div class="card-title-icon">📧</div> Email API URL (AWS SES)</div>
+    <div style="color:var(--text2);font-size:13px;margin-bottom:12px">
+      Enter your AWS API Gateway URL for sending emails (OTP, reminders, digests). This is the endpoint connected to your Lambda + SES function.
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Email API URL</label>
+      <div style="display:flex;gap:8px">
+        <input type="password" id="settings-ses-url" placeholder="https://xxxxx.execute-api.us-east-1.amazonaws.com/send-email" style="flex:1"/>
+        <button onclick="var el=document.getElementById('settings-ses-url');el.type=el.type==='password'?'text':'password'" style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:13px">Show</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="submit-btn" style="width:auto;padding:10px 24px" onclick="saveSESUrl()">Save URL</button>
+      <button onclick="testSESUrl()" style="padding:10px 16px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--text2)">Test Email</button>
+      <span id="ses-test-result" style="font-size:12px;margin-left:8px"></span>
+    </div>
+  </div>
+  <div class="card">
     <div class="card-title"><div class="card-title-icon">ℹ️</div> Security Note</div>
     <div style="color:var(--text2);font-size:13px;line-height:1.6">
-      API keys entered here are stored in <strong>your browser's local storage only</strong>. They are never saved in the source code or sent to any server other than Google's API. Each admin needs to enter the key on their own device. If you clear your browser data, you'll need to re-enter the key.
+      All keys and URLs entered here are stored in <strong>your browser's local storage only</strong>. They are never saved in the source code or sent to any server other than the configured endpoints. Each admin needs to enter these on their own device. If you clear your browser data, you'll need to re-enter them.
     </div>
   </div>
 </div>
@@ -1304,11 +1322,21 @@ function detectProvider(key) {
   return 'groq';
 }
 
-// EmailJS config for OTP emails
-const EMAILJS_PUBLIC_KEY = 'RlPyRj-3noMB8beie';
-const EMAILJS_SERVICE_ID = 'service_gcq161p';
-const EMAILJS_TEMPLATE_ID = 'template_w0wosp2';
-const EMAILJS_REMINDER_TEMPLATE_ID = 'template_l3x75va';
+// Email sending via AWS SES (URL stored in localStorage, not in code)
+function getSESUrl() { return localStorage.getItem('wl_ses_url') || ''; }
+
+async function sendSESEmail(type, to_email, to_name, subject, body_text) {
+  var sesUrl = getSESUrl();
+  if (!sesUrl) throw new Error('Email service not configured. Go to Settings → Email API URL.');
+  var res = await fetch(sesUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: type, to_email: to_email, to_name: to_name, subject: subject, body_text: body_text })
+  });
+  var data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
 
 let dashAllRows = [];
 let dashWeekOffset = 0;
@@ -1420,16 +1448,12 @@ function sendOTP(isResend) {
   var btn = document.getElementById('send-otp-btn');
   btn.disabled = true; btn.textContent = 'Sending code...';
 
-  emailjs.init(EMAILJS_PUBLIC_KEY);
-  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-    to_email: email,
-    to_name: emp.name,
-    otp_code: generatedOTP
-  }).then(function() {
+  sendSESEmail('otp', email, emp.name, 'WorkLog — Your verification code', generatedOTP)
+  .then(function() {
     showOTPStep(isResend);
     btn.disabled = false; btn.textContent = 'Send verification code →';
   }).catch(function(err) {
-    errEl.textContent = 'Could not send code: ' + (err.text || err.message || 'Unknown error');
+    errEl.textContent = 'Could not send code: ' + (err.message || 'Unknown error');
     btn.disabled = false; btn.textContent = 'Send verification code →';
   });
 }
@@ -2488,25 +2512,51 @@ async function askAI(question) {
     var notSubmitted = ALL_EMPLOYEES.filter(function(e){ return submittedToday.indexOf(e) === -1; });
 
     var dataContext = 'Today is ' + today + ' (' + dayName(today) + ').\n\n';
-    dataContext += 'EMPLOYEES (' + ALL_EMPLOYEES.length + ' total): ' + ALL_EMPLOYEES.join(', ') + '\n\n';
+    dataContext += 'EMPLOYEES (' + ALL_EMPLOYEES.length + '): ' + ALL_EMPLOYEES.join(', ') + '\n\n';
     dataContext += 'SUBMITTED TODAY: ' + (submittedToday.length > 0 ? submittedToday.join(', ') : 'Nobody yet') + '\n';
-    dataContext += 'NOT SUBMITTED TODAY: ' + (notSubmitted.length > 0 ? notSubmitted.join(', ') : 'Everyone has submitted!') + '\n\n';
+    dataContext += 'NOT SUBMITTED: ' + (notSubmitted.length > 0 ? notSubmitted.join(', ') : 'All submitted!') + '\n\n';
 
-    // Raw data rows (last 200 entries to stay within limits)
-    var recentData = data.slice(-200);
-    dataContext += 'WORK LOG DATA (columns: Date, Day, Employee, Team, DayType, Task, Description, Sprint, Hours):\n';
+    // Summary stats instead of raw dump
+    var thisWeek = data.filter(function(r){ return inWeek(r[0], 0); });
+    var lastWeek = data.filter(function(r){ return inWeek(r[0], -1); });
+    var totalHrsWeek = thisWeek.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+    var totalHrsLast = lastWeek.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+    dataContext += 'THIS WEEK: ' + thisWeek.length + ' entries, ' + totalHrsWeek + 'h total\n';
+    dataContext += 'LAST WEEK: ' + lastWeek.length + ' entries, ' + totalHrsLast + 'h total\n\n';
+
+    // Per-employee summary this week
+    var empHrs = {};
+    thisWeek.forEach(function(r){ empHrs[r[2]] = (empHrs[r[2]]||0) + (parseFloat(r[8])||0); });
+    dataContext += 'HOURS BY EMPLOYEE (this week):\n';
+    Object.keys(empHrs).sort().forEach(function(e){ dataContext += e + ': ' + empHrs[e] + 'h\n'; });
+
+    // Per-team summary
+    var teamHrs = {};
+    thisWeek.forEach(function(r){ teamHrs[r[3]] = (teamHrs[r[3]]||0) + (parseFloat(r[8])||0); });
+    dataContext += '\nHOURS BY TEAM:\n';
+    Object.keys(teamHrs).sort().forEach(function(t){ dataContext += t + ': ' + teamHrs[t] + 'h\n'; });
+
+    // Recent entries (last 30 only)
+    var recentData = data.slice(-30);
+    dataContext += '\nRECENT LOG ENTRIES (Date|Employee|Team|Task|Hours):\n';
     recentData.forEach(function(r) {
-      dataContext += r.join(' | ') + '\n';
+      dataContext += r[0] + ' | ' + r[2] + ' | ' + r[3] + ' | ' + r[5] + ' | ' + r[8] + 'h\n';
     });
-    dataContext += '\nTotal work log entries: ' + data.length;
+    dataContext += 'Total entries: ' + data.length;
 
-    // Add expense data
+    // Expense summary (not raw data)
     if (expenses.length > 0) {
-      dataContext += '\n\nEXPENSE CLAIMS (columns: Date, Employee, Team, Category, Amount, Reason, Status):\n';
-      expenses.forEach(function(e) {
-        dataContext += e.date + ' | ' + e.employee + ' | ' + e.team + ' | ' + e.category + ' | ₹' + e.amount + ' | ' + e.reason + ' | ' + e.status + '\n';
-      });
-      dataContext += 'Total expense claims: ' + expenses.length;
+      var pending = expenses.filter(function(e){ return e.status==='Pending'; });
+      var approved = expenses.filter(function(e){ return e.status==='Approved'||e.status==='Paid'; });
+      var totalAmt = expenses.reduce(function(s,e){ return s+e.amount; },0);
+      dataContext += '\n\nEXPENSES: ' + expenses.length + ' claims, ₹' + totalAmt.toLocaleString('en-IN') + ' total';
+      dataContext += '\nPending: ' + pending.length + ', Approved/Paid: ' + approved.length;
+      if (pending.length > 0) {
+        dataContext += '\nPending claims:\n';
+        pending.slice(0, 10).forEach(function(e) {
+          dataContext += e.employee + ' | ₹' + e.amount + ' | ' + e.category + ' | ' + e.reason + '\n';
+        });
+      }
     }
 
     var prompt = 'You are the WorkLog AI Assistant for BSharp Corp. You help HR analyze employee work log data and expense claims. Answer questions clearly and concisely. Use the data provided below. If a calculation is needed, do it. Format numbers nicely. Use bullet points for lists.\n\nDATA:\n' + dataContext + '\n\nQUESTION: ' + question;
@@ -3655,18 +3705,13 @@ async function sendTestDigest() {
     // Show preview
     document.getElementById('digest-preview').innerHTML = '<pre style="white-space:pre-wrap;font-family:\'DM Sans\',sans-serif;font-size:13px;line-height:1.7;margin:0">' + digestBody + '</pre>';
 
-    // Send via EmailJS
-    emailjs.init(EMAILJS_PUBLIC_KEY);
-    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      to_email: email,
-      to_name: 'Admin',
-      otp_code: digestBody
-    });
+    // Send via AWS SES
+    await sendSESEmail('digest', email, 'Admin', 'WorkLog Weekly Digest', digestBody);
     statusEl.innerHTML = '<span style="color:var(--cs)">✓ Digest sent to ' + email + '</span>';
     logAudit('status', currentUser.name + ' sent email digest to ' + email);
     showToast('✓ Digest email sent');
   } catch(e) {
-    statusEl.innerHTML = '<span style="color:var(--red)">✗ ' + (e.text || e.message || 'Failed to send') + '</span>';
+    statusEl.innerHTML = '<span style="color:var(--red)">✗ ' + (e.message || 'Failed to send') + '</span>';
   }
 }
 
@@ -3699,6 +3744,31 @@ function loadSettingsPage() {
     document.getElementById('key-status').innerHTML = '<span style="color:var(--cs)">✓ Key saved — using ' + (provider === 'anthropic' ? 'Anthropic Claude' : 'Groq (free)') + '</span>';
   } else {
     document.getElementById('key-status').innerHTML = '<span style="color:var(--text3)">No key configured yet</span>';
+  }
+  // Load SES URL
+  var sesUrl = getSESUrl();
+  var sesInput = document.getElementById('settings-ses-url');
+  if (sesInput && sesUrl) sesInput.value = sesUrl;
+}
+
+function saveSESUrl() {
+  var url = document.getElementById('settings-ses-url').value.trim();
+  if (!url) { showToast('Please enter the API URL',true); return; }
+  localStorage.setItem('wl_ses_url', url);
+  document.getElementById('ses-test-result').innerHTML = '<span style="color:var(--cs)">✓ URL saved</span>';
+  showToast('✓ Email API URL saved');
+}
+
+async function testSESUrl() {
+  var url = document.getElementById('settings-ses-url').value.trim();
+  if (!url) { showToast('Please enter URL first',true); return; }
+  localStorage.setItem('wl_ses_url', url);
+  document.getElementById('ses-test-result').innerHTML = '<span class="spinner"></span>';
+  try {
+    await sendSESEmail('otp', currentUser.email, currentUser.name, 'WorkLog — Test Email', '000000');
+    document.getElementById('ses-test-result').innerHTML = '<span style="color:var(--cs)">✓ Test email sent to ' + currentUser.email + '</span>';
+  } catch(e) {
+    document.getElementById('ses-test-result').innerHTML = '<span style="color:var(--red)">✗ ' + e.message + '</span>';
   }
 }
 
@@ -3813,23 +3883,17 @@ async function checkAndSendReminders() {
       return;
     }
 
-    // Send reminder emails via EmailJS
-    emailjs.init(EMAILJS_PUBLIC_KEY);
+    // Send reminder emails via AWS SES
     var sent = 0;
     var failed = 0;
 
     for (var i = 0; i < missing.length; i++) {
       var emp = missing[i];
       try {
-        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_REMINDER_TEMPLATE_ID, {
-          to_email: emp.email,
-          to_name: emp.name,
-          missed_date: yesterdayLabel,
-          app_link: 'https://lakshmiraj-alt.github.io/Worklog/'
-        });
+        await sendSESEmail('reminder', emp.email, emp.name, 'WorkLog — Daily log reminder', yesterdayLabel);
         sent++;
         // Small delay to avoid rate limiting
-        await new Promise(function(r){ setTimeout(r, 1000); });
+        await new Promise(function(r){ setTimeout(r, 500); });
       } catch(e) {
         failed++;
       }
