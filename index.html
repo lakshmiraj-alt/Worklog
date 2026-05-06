@@ -31,7 +31,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* Main content offset */
 main{margin-left:220px;margin-top:52px;padding:1rem 1.5rem}
 .page{display:none}.page.active{display:block}
-#page-home.active{display:flex}
+#page-home.active{display:flex;flex-direction:column}
 /* Sidebar overlay for mobile */
 .sidebar-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.3);z-index:99}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--shadow)}
@@ -411,7 +411,7 @@ tbody td.muted{color:var(--text2)}
 
 <!-- ===== SUBMIT ===== -->
 <!-- ===== HOME DASHBOARD (Everyone) ===== -->
-<div class="page active" id="page-home" style="height:calc(100vh - 76px);overflow:hidden;display:none;flex-direction:column">
+<div class="page active" id="page-home" style="height:calc(100vh - 76px);overflow:hidden">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:6px">
     <div>
       <div style="font-family:'DM Serif Display',serif;font-size:20px" id="home-greeting">Welcome!</div>
