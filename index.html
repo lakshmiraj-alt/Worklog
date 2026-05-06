@@ -29,8 +29,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .hamburger{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text);padding:4px}
 .nav-right{font-size:12px;color:var(--text3)}
 /* Main content offset */
-main{margin-left:220px;margin-top:52px;padding:1.5rem 2.5rem}
+main{margin-left:220px;margin-top:52px;padding:1rem 1.5rem}
 .page{display:none}.page.active{display:block}
+#page-home.active{display:flex}
 /* Sidebar overlay for mobile */
 .sidebar-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.3);z-index:99}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--shadow)}
@@ -410,34 +411,29 @@ tbody td.muted{color:var(--text2)}
 
 <!-- ===== SUBMIT ===== -->
 <!-- ===== HOME DASHBOARD (Everyone) ===== -->
-<div class="page active" id="page-home">
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+<div class="page active" id="page-home" style="height:calc(100vh - 76px);overflow:hidden;display:none;flex-direction:column">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:6px">
     <div>
-      <div style="font-family:'DM Serif Display',serif;font-size:24px" id="home-greeting">Welcome!</div>
-      <div style="color:var(--text2);font-size:12px" id="home-subtext">Your performance overview</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:20px" id="home-greeting">Welcome!</div>
+      <div style="color:var(--text2);font-size:11px" id="home-subtext">Your performance overview</div>
     </div>
     <div style="display:flex;gap:6px;align-items:center">
-      <select id="home-period" onchange="renderHomeDashboard()" style="padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:11px">
-        <option value="week">This Week</option>
-        <option value="month">This Month</option>
+      <select id="home-period" onchange="renderHomeDashboard()" style="padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:10px">
+        <option value="week">This Week</option><option value="month">This Month</option>
       </select>
-      <button class="submit-btn" style="width:auto;padding:7px 14px;font-size:11px" onclick="switchPage('submit',document.querySelector('.nav-tab'))">📝 Submit Log</button>
+      <button class="submit-btn" style="width:auto;padding:5px 12px;font-size:10px" onclick="switchPage('submit',document.querySelector('.nav-tab'))">📝 Submit Log</button>
     </div>
   </div>
   <!-- KPI Cards -->
-  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px" id="home-kpi-row"></div>
-  <!-- Charts: 2x2 grid -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-    <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">📊 Hours Trend</div><canvas id="home-chart-trend" height="140"></canvas></div>
-    <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">🍩 Hours by Team</div><canvas id="home-chart-team" height="140"></canvas></div>
-    <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">📈 Tasks by Sprint</div><canvas id="home-chart-tasks" height="140"></canvas></div>
-    <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">👥 Submission Rate</div><canvas id="home-chart-submission" height="140"></canvas></div>
-  </div>
-  <!-- Bottom: 3 columns -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-    <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">📢 Announcements</div><div id="home-announcements"></div><div id="home-announce-form" style="display:none;margin-top:6px"><div style="display:flex;gap:4px"><input type="text" id="home-announce-text" placeholder="Post..." style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:11px"/><button class="submit-btn" style="width:auto;padding:6px 10px;font-size:11px" onclick="postAnnouncement()">Post</button></div></div></div>
-    <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">🏆 Leaderboard</div><div class="table-wrap" style="max-height:200px;overflow-y:auto"><table><thead><tr><th>#</th><th>Name</th><th>Hours</th></tr></thead><tbody id="home-leaderboard"></tbody></table></div></div>
-    <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">📋 Today's Activity</div><div id="home-activity-feed" style="max-height:200px;overflow-y:auto"></div></div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:6px" id="home-kpi-row"></div>
+  <!-- Charts 2x2 + Bottom 3 cols in one grid -->
+  <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:6px;min-height:0">
+    <div class="card" style="padding:8px;margin:0"><div style="font-size:10px;font-weight:600;color:var(--text2);margin-bottom:4px">📊 Hours Trend</div><div style="height:calc(100% - 20px)"><canvas id="home-chart-trend"></canvas></div></div>
+    <div class="card" style="padding:8px;margin:0"><div style="font-size:10px;font-weight:600;color:var(--text2);margin-bottom:4px">🍩 Hours by Team</div><div style="height:calc(100% - 20px)"><canvas id="home-chart-team"></canvas></div></div>
+    <div class="card" style="padding:8px;margin:0"><div style="font-size:10px;font-weight:600;color:var(--text2);margin-bottom:4px">📈 Tasks by Sprint</div><div style="height:calc(100% - 20px)"><canvas id="home-chart-tasks"></canvas></div></div>
+    <div class="card" style="padding:8px;margin:0;overflow-y:auto"><div style="font-size:10px;font-weight:600;color:var(--text2);margin-bottom:4px">📢 Announcements</div><div id="home-announcements"></div><div id="home-announce-form" style="display:none;margin-top:4px"><div style="display:flex;gap:4px"><input type="text" id="home-announce-text" placeholder="Post..." style="flex:1;padding:4px 6px;border:1px solid var(--border);border-radius:var(--radius);font-size:10px"/><button class="submit-btn" style="width:auto;padding:4px 8px;font-size:10px" onclick="postAnnouncement()">Post</button></div></div></div>
+    <div class="card" style="padding:8px;margin:0;overflow-y:auto"><div style="font-size:10px;font-weight:600;color:var(--text2);margin-bottom:4px">🏆 Leaderboard</div><table style="font-size:11px"><thead><tr><th>#</th><th>Name</th><th>Hrs</th></tr></thead><tbody id="home-leaderboard"></tbody></table></div>
+    <div class="card" style="padding:8px;margin:0;overflow-y:auto"><div style="font-size:10px;font-weight:600;color:var(--text2);margin-bottom:4px">📋 Today's Activity</div><div id="home-activity-feed"></div></div>
   </div>
 </div>
 
@@ -2216,8 +2212,8 @@ async function renderHomeDashboard() {
   // KPI Cards with comparison arrows
   function kpiCard(icon, label, value, sub, prev, color) {
     var diff = prev !== null ? value - prev : null;
-    var arrow = diff !== null ? (diff > 0 ? '<span style="color:var(--green);font-size:10px">▲+'+Math.abs(diff).toFixed(0)+'</span>' : diff < 0 ? '<span style="color:var(--red);font-size:10px">▼'+Math.abs(diff).toFixed(0)+'</span>' : '') : '';
-    return '<div class="card" style="padding:10px;position:relative;overflow:hidden"><div style="position:absolute;top:-6px;right:-6px;font-size:36px;opacity:.06">'+icon+'</div><div style="font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:4px">'+label+'</div><div style="font-size:22px;font-weight:700;color:'+(color||'var(--text)')+'">'+value+'</div><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:10px;color:var(--text3)">'+sub+'</span>'+arrow+'</div></div>';
+    var arrow = diff !== null ? (diff > 0 ? '<span style="color:var(--green);font-size:9px">▲'+Math.abs(diff).toFixed(0)+'</span>' : diff < 0 ? '<span style="color:var(--red);font-size:9px">▼'+Math.abs(diff).toFixed(0)+'</span>' : '') : '';
+    return '<div class="card" style="padding:8px 10px;margin:0"><div style="font-size:8px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text3)">'+label+'</div><div style="font-size:20px;font-weight:700;color:'+(color||'var(--text)')+'">'+value+'</div><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:9px;color:var(--text3)">'+sub+'</span>'+arrow+'</div></div>';
   }
 
   document.getElementById('home-kpi-row').innerHTML =
@@ -2266,18 +2262,6 @@ async function renderHomeDashboard() {
   }, { indexAxis: 'y' });
 
   // Chart 4: Submission rate (bar - last 5 working days)
-  var workDays = [];
-  var wd = new Date();
-  while (workDays.length < 5) { if (wd.getDay() !== 0 && wd.getDay() !== 6) workDays.unshift(toISO(wd)); wd.setDate(wd.getDate()-1); }
-  var subRates = workDays.map(function(day) {
-    var submitted = new Set(data.filter(function(r){ return toISO(toDateObj(r[0])) === day; }).map(function(r){ return r[2]; })).size;
-    return Math.round((submitted / ALL_EMPLOYEES.length) * 100);
-  });
-  renderChart('home-chart-submission', 'bar', {
-    labels: workDays.map(function(d){ return new Date(d).toLocaleDateString('en-IN',{weekday:'short',day:'numeric'}); }),
-    datasets: [{ label: 'Submission %', data: subRates, backgroundColor: subRates.map(function(v){ return v >= 80 ? '#1A7A4A' : v >= 50 ? '#C4521A' : '#C0392B'; }), borderRadius: 6 }]
-  }, { scales: { y: { max: 100, ticks: { callback: function(v){ return v+'%'; } } } } });
-
   // Activity feed
   var todayEntries = data.filter(function(r){ return toISO(toDateObj(r[0])) === today; });
   var actFeed = document.getElementById('home-activity-feed');
