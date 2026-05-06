@@ -252,6 +252,9 @@ tbody td.muted{color:var(--text2)}
 @media(max-width:768px){
   .notes-sidebar{flex-direction:column;min-height:auto}
   .notes-list-panel{width:100%;border-right:none;border-bottom:1px solid var(--border);padding-right:0;padding-bottom:1rem;max-height:200px;overflow-y:auto}
+  #home-kpi-row{grid-template-columns:repeat(2,1fr)!important}
+  #page-home [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
+  #page-home [style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr!important}
 }
 /* Login overlay */
 .login-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center}
@@ -408,72 +411,33 @@ tbody td.muted{color:var(--text2)}
 <!-- ===== SUBMIT ===== -->
 <!-- ===== HOME DASHBOARD (Everyone) ===== -->
 <div class="page active" id="page-home">
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:1rem">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
     <div>
-      <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:2px" id="home-greeting">Welcome!</div>
-      <div style="color:var(--text2);font-size:13.5px" id="home-subtext">Here's your performance overview</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:24px" id="home-greeting">Welcome!</div>
+      <div style="color:var(--text2);font-size:12px" id="home-subtext">Your performance overview</div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <select id="home-period" onchange="renderHomeDashboard()" style="padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:12px">
+    <div style="display:flex;gap:6px;align-items:center">
+      <select id="home-period" onchange="renderHomeDashboard()" style="padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:11px">
         <option value="week">This Week</option>
         <option value="month">This Month</option>
       </select>
-      <button class="submit-btn" style="width:auto;padding:8px 18px;font-size:12px" onclick="switchPage('submit',document.querySelector('.nav-tab'))">📝 Submit Log</button>
+      <button class="submit-btn" style="width:auto;padding:7px 14px;font-size:11px" onclick="switchPage('submit',document.querySelector('.nav-tab'))">📝 Submit Log</button>
     </div>
   </div>
-
-  <!-- KPI Cards Row -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:1rem" id="home-kpi-row"></div>
-
-  <!-- Charts Row -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
-    <div class="card" style="padding:1rem">
-      <div class="card-title" style="font-size:13px"><span class="card-title-icon">📊</span>Hours Trend (Daily)</div>
-      <canvas id="home-chart-trend" height="200"></canvas>
-    </div>
-    <div class="card" style="padding:1rem">
-      <div class="card-title" style="font-size:13px"><span class="card-title-icon">🍩</span>Hours by Team</div>
-      <canvas id="home-chart-team" height="200"></canvas>
-    </div>
+  <!-- KPI Cards -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px" id="home-kpi-row"></div>
+  <!-- Charts: 2x2 grid -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+    <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">📊 Hours Trend</div><canvas id="home-chart-trend" height="140"></canvas></div>
+    <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">🍩 Hours by Team</div><canvas id="home-chart-team" height="140"></canvas></div>
+    <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">📈 Tasks by Sprint</div><canvas id="home-chart-tasks" height="140"></canvas></div>
+    <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">👥 Submission Rate</div><canvas id="home-chart-submission" height="140"></canvas></div>
   </div>
-
-  <!-- Second Row -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
-    <div class="card" style="padding:1rem">
-      <div class="card-title" style="font-size:13px"><span class="card-title-icon">📈</span>Tasks by Category</div>
-      <canvas id="home-chart-tasks" height="200"></canvas>
-    </div>
-    <div class="card" style="padding:1rem">
-      <div class="card-title" style="font-size:13px"><span class="card-title-icon">👥</span>Submission Rate</div>
-      <canvas id="home-chart-submission" height="200"></canvas>
-    </div>
-  </div>
-
-  <!-- Announcements -->
-  <div class="card" id="home-announcements-card" style="padding:1rem">
-    <div class="card-title" style="font-size:13px"><span class="card-title-icon">📢</span>Announcements</div>
-    <div id="home-announcements"></div>
-    <div id="home-announce-form" style="display:none;margin-top:10px">
-      <div style="display:flex;gap:6px">
-        <input type="text" id="home-announce-text" placeholder="Type announcement..." style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px"/>
-        <button class="submit-btn" style="width:auto;padding:8px 16px" onclick="postAnnouncement()">Post</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Leaderboard + Activity Feed -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
-    <div class="card" style="padding:1rem">
-      <div class="card-title" style="font-size:13px"><span class="card-title-icon">🏆</span>Leaderboard</div>
-      <div class="table-wrap">
-        <table><thead><tr><th>#</th><th>Employee</th><th>Team</th><th>Hours</th><th>Tasks</th></tr></thead>
-        <tbody id="home-leaderboard"></tbody></table>
-      </div>
-    </div>
-    <div class="card" style="padding:1rem">
-      <div class="card-title" style="font-size:13px"><span class="card-title-icon">📋</span>Today's Activity</div>
-      <div id="home-activity-feed" style="max-height:300px;overflow-y:auto"></div>
-    </div>
+  <!-- Bottom: 3 columns -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+    <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">📢 Announcements</div><div id="home-announcements"></div><div id="home-announce-form" style="display:none;margin-top:6px"><div style="display:flex;gap:4px"><input type="text" id="home-announce-text" placeholder="Post..." style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:11px"/><button class="submit-btn" style="width:auto;padding:6px 10px;font-size:11px" onclick="postAnnouncement()">Post</button></div></div></div>
+    <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">🏆 Leaderboard</div><div class="table-wrap" style="max-height:200px;overflow-y:auto"><table><thead><tr><th>#</th><th>Name</th><th>Hours</th></tr></thead><tbody id="home-leaderboard"></tbody></table></div></div>
+    <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">📋 Today's Activity</div><div id="home-activity-feed" style="max-height:200px;overflow-y:auto"></div></div>
   </div>
 </div>
 
@@ -2252,8 +2216,8 @@ async function renderHomeDashboard() {
   // KPI Cards with comparison arrows
   function kpiCard(icon, label, value, sub, prev, color) {
     var diff = prev !== null ? value - prev : null;
-    var arrow = diff !== null ? (diff > 0 ? '<span style="color:var(--green);font-size:11px">▲ +'+Math.abs(diff).toFixed(1)+'</span>' : diff < 0 ? '<span style="color:var(--red);font-size:11px">▼ '+Math.abs(diff).toFixed(1)+'</span>' : '<span style="color:var(--text3);font-size:11px">— same</span>') : '';
-    return '<div class="card" style="padding:14px;position:relative;overflow:hidden"><div style="position:absolute;top:-8px;right:-8px;font-size:48px;opacity:.08">'+icon+'</div><div style="font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">'+label+'</div><div style="font-size:28px;font-weight:700;color:'+(color||'var(--text)')+';margin-bottom:2px">'+value+'</div><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:var(--text3)">'+sub+'</span>'+arrow+'</div></div>';
+    var arrow = diff !== null ? (diff > 0 ? '<span style="color:var(--green);font-size:10px">▲+'+Math.abs(diff).toFixed(0)+'</span>' : diff < 0 ? '<span style="color:var(--red);font-size:10px">▼'+Math.abs(diff).toFixed(0)+'</span>' : '') : '';
+    return '<div class="card" style="padding:10px;position:relative;overflow:hidden"><div style="position:absolute;top:-6px;right:-6px;font-size:36px;opacity:.06">'+icon+'</div><div style="font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:4px">'+label+'</div><div style="font-size:22px;font-weight:700;color:'+(color||'var(--text)')+'">'+value+'</div><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:10px;color:var(--text3)">'+sub+'</span>'+arrow+'</div></div>';
   }
 
   document.getElementById('home-kpi-row').innerHTML =
@@ -2340,10 +2304,10 @@ async function renderHomeDashboard() {
   var medals = ['🥇','🥈','🥉'];
   var tClass = {'Technical':'badge-tech','Customer Success':'badge-cs','Marketing':'badge-mkt'};
   var lbTbody = document.getElementById('home-leaderboard');
-  if (leaderboard.length === 0) { lbTbody.innerHTML = '<tr><td colspan="5" class="empty-state">No data</td></tr>'; }
+  if (leaderboard.length === 0) { lbTbody.innerHTML = '<tr><td colspan="3" class="empty-state">No data</td></tr>'; }
   else {
-    lbTbody.innerHTML = leaderboard.slice(0,10).map(function(e, i) {
-      return '<tr'+(e.name===myName?' style="background:var(--accent-light)"':'')+'><td style="font-size:15px">'+(medals[i]||(i+1))+'</td><td style="font-weight:'+(e.name===myName?'700':'500')+'">'+e.name+(e.name===myName?' ★':'')+'</td><td><span class="badge '+(tClass[e.team]||'badge-other')+'">'+e.team+'</span></td><td style="font-weight:600">'+e.hours+'h</td><td>'+e.tasks+'</td></tr>';
+    lbTbody.innerHTML = leaderboard.slice(0,8).map(function(e, i) {
+      return '<tr'+(e.name===myName?' style="background:var(--accent-light)"':'')+'><td style="font-size:14px">'+(medals[i]||(i+1))+'</td><td style="font-size:12px;font-weight:'+(e.name===myName?'700':'500')+'">'+e.name+(e.name===myName?' ★':'')+'</td><td style="font-weight:600;font-size:12px">'+e.hours+'h</td></tr>';
     }).join('');
   }
 }
