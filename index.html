@@ -528,14 +528,14 @@ tbody td.muted{color:var(--text2)}
 
   <!-- Custom date check -->
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <div class="card-title" style="margin-bottom:0"><div class="card-title-icon">📅</div> Check any date</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      <div class="card-title" style="margin-bottom:0"><div class="card-title-icon">📅</div> <span id="custom-date-label">Check any date</span></div>
       <div style="display:flex;gap:6px;align-items:center">
         <input type="date" id="dash-custom-date" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:12px"/>
         <button onclick="checkCustomDate()" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600">Check</button>
       </div>
     </div>
-    <div id="custom-date-grid" class="emp-grid" style="margin-top:10px;display:none"></div>
+    <div id="custom-date-grid" class="emp-grid" style="display:none"></div>
   </div>
 
   <div class="metric-grid" id="metric-grid">
@@ -1892,15 +1892,15 @@ function checkCustomDate() {
   var dateInput = document.getElementById('dash-custom-date').value;
   if (!dateInput) { showToast('Please select a date', true); return; }
   var dateStr = dateInput;
-  var dateLabel = new Date(dateInput).toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short',year:'numeric'});
+  var dateLabel = new Date(dateInput).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
   var submitted = new Set(dashAllRows.filter(function(r){ return toISO(toDateObj(r[0])) === dateStr; }).map(function(r){ return r[2]; }));
+  document.getElementById('custom-date-label').textContent = dateLabel + ' — submission status (' + submitted.size + '/' + ALL_EMPLOYEES.length + ')';
   var grid = document.getElementById('custom-date-grid');
-  grid.style.display = 'flex';
-  grid.innerHTML = '<div style="width:100%;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">' + dateLabel + ' — ' + submitted.size + '/' + ALL_EMPLOYEES.length + ' submitted</div>' +
-    ALL_EMPLOYEES.map(function(emp){
-      var present = submitted.has(emp);
-      return '<div class="emp-chip '+(present?'present':'missing')+'"><div class="emp-chip-dot"></div><span style="font-size:12px">'+emp+'</span></div>';
-    }).join('');
+  grid.style.display = '';
+  grid.innerHTML = ALL_EMPLOYEES.map(function(emp){
+    var present = submitted.has(emp);
+    return '<div class="emp-chip '+(present?'present':'missing')+'"><div class="emp-chip-dot"></div><span style="font-size:12px">'+emp+'</span></div>';
+  }).join('');
 }
 
 function updateMetrics() {
