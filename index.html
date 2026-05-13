@@ -2880,8 +2880,9 @@ async function renderMySubmissions() {
     var threeDaysAgo = new Date(); threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
     tbody.innerHTML = myRows.map(function(r) {
       var rowDate = toDateObj(r[0]);
-      var canEdit = rowDate >= threeDaysAgo && r[9]; // within 3 days AND has an ID
-      var editBtn = canEdit ? '<button onclick="openEditLog(\''+r[9]+'\')" style="padding:4px 10px;border:1px solid var(--accent);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:11px;color:var(--accent)">✏️ Edit</button>' : '<span style="color:var(--text3);font-size:11px">—</span>';
+      var canEdit = rowDate >= threeDaysAgo;
+      var rowKey = btoa(encodeURIComponent(r[0] + '|' + r[2] + '|' + r[5] + '|' + r[8])).replace(/=/g,'');
+      var editBtn = canEdit ? '<button onclick="openEditLog(\''+rowKey+'\')" style="padding:4px 10px;border:1px solid var(--accent);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:11px;color:var(--accent)">✏️ Edit</button>' : '<span style="color:var(--text3);font-size:11px">—</span>';
       return '<tr>'+
         '<td class="muted">'+fmtDate(r[0])+'<br><span style="font-size:11px;color:var(--text3)">'+(r[1]||dayName(r[0]))+'</span></td>'+
         '<td style="font-weight:500">'+r[5]+'</td>'+
@@ -2897,10 +2898,14 @@ async function renderMySubmissions() {
 }
 
 // Edit work log entry
-function openEditLog(rowId) {
-  // Find the row in cached data
-  var row = dashAllRows.find(function(r) { return r[9] === rowId; });
+function openEditLog(rowKey) {
+  var decoded = decodeURIComponent(atob(rowKey)).split('|');
+  var matchDate = decoded[0], matchName = decoded[1], matchTask = decoded[2], matchHours = decoded[3];
+  var row = dashAllRows.find(function(r) { return String(r[0]) === matchDate && r[2] === matchName && r[5] === matchTask && String(r[8]) === matchHours; });
   if (!row) { showToast('Entry not found. Try refreshing.', true); return; }
+  // Store reference for save
+  window._editingRow = row;
+  window._editingOriginal = { task: row[5], sprint: row[7], hours: row[8], desc: row[6] };
   var modal = document.getElementById('attach-modal');
   var box = document.getElementById('attach-modal-box');
   box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
@@ -2912,13 +2917,14 @@ function openEditLog(rowId) {
     '<div class="field"><label>Sprint</label><input type="text" id="edit-sprint" value="' + (row[7] || '').replace(/"/g, '&quot;') + '"/></div>' +
     '<div class="field"><label>Hours</label><input type="number" id="edit-hours" value="' + (row[8] || 0) + '" min="0" step="0.5"/></div></div>' +
     '<div class="field"><label>Description</label><textarea id="edit-desc" rows="3">' + (row[6] || '') + '</textarea></div>' +
-    '<div style="display:flex;gap:8px"><button class="submit-btn" style="width:auto;padding:9px 20px" onclick="saveEditLog(\'' + rowId + '\')">Save Changes</button>' +
+    '<div style="display:flex;gap:8px"><button class="submit-btn" style="width:auto;padding:9px 20px" onclick="saveEditLog()">Save Changes</button>' +
     '<button onclick="closeAttachment()" style="padding:9px 14px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--text2)">Cancel</button></div>';
   modal.style.display = 'flex';
 }
 
-async function saveEditLog(rowId) {
-  var row = dashAllRows.find(function(r) { return r[9] === rowId; });
+async function saveEditLog() {
+  var row = window._editingRow;
+  var orig = window._editingOriginal;
   if (!row) { showToast('Entry not found', true); return; }
 
   var newTask = document.getElementById('edit-task').value.trim();
@@ -2928,8 +2934,18 @@ async function saveEditLog(rowId) {
 
   if (!newTask) { showToast('Task name is required', true); return; }
 
-  // Track old values for audit
-  var oldTask = row[5], oldSprint = row[7], oldHours = row[8], oldDesc = row[6];
+  // Save to Google Sheet — find by date + employee + old task + old hours
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'updateWorkLog',
+        match: { date: String(row[0]), employee: row[2], task: orig.task, hours: String(orig.hours) },
+        newValues: { task: newTask, description: newDesc, sprint: newSprint, hours: newHours }
+      })
+    });
+  } catch(e) {}
 
   // Update local data
   row[5] = newTask;
@@ -2937,28 +2953,17 @@ async function saveEditLog(rowId) {
   row[7] = newSprint;
   row[8] = newHours;
 
-  // Save to Google Sheet
-  try {
-    await fetch(SCRIPT_URL, {
-      method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        action: 'updateWorkLog',
-        id: rowId,
-        row: [row[0], row[1], row[2], row[3], row[4], newTask, newDesc, newSprint, newHours, rowId]
-      })
-    });
-  } catch(e) {}
-
   // Audit log
   var changes = [];
-  if (oldTask !== newTask) changes.push('Task: "' + oldTask + '" → "' + newTask + '"');
-  if (oldSprint !== newSprint) changes.push('Sprint: "' + oldSprint + '" → "' + newSprint + '"');
-  if (oldHours !== newHours) changes.push('Hours: ' + oldHours + 'h → ' + newHours + 'h');
-  if (oldDesc !== newDesc) changes.push('Description updated');
-  logAudit('log', '<strong>' + currentUser.name + '</strong> edited log entry (' + fmtDate(row[0]) + '): ' + changes.join(', '));
+  if (orig.task !== newTask) changes.push('Task: "' + orig.task + '" → "' + newTask + '"');
+  if (orig.sprint !== newSprint) changes.push('Sprint: "' + orig.sprint + '" → "' + newSprint + '"');
+  if (String(orig.hours) !== String(newHours)) changes.push('Hours: ' + orig.hours + 'h → ' + newHours + 'h');
+  if (orig.desc !== newDesc) changes.push('Description updated');
+  if (changes.length > 0) {
+    logAudit('log', '<strong>' + currentUser.name + '</strong> edited log (' + fmtDate(row[0]) + '): ' + changes.join(', '));
+  }
 
-  _dataLastFetched = 0; // invalidate cache
+  _dataLastFetched = 0;
   closeAttachment();
   showToast('✓ Entry updated');
   renderMySubmissions();
