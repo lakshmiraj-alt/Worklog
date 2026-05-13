@@ -703,8 +703,8 @@ tbody td.muted{color:var(--text2)}
     <div class="section-divider">My log entries</div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Date</th><th>Task</th><th>Description</th><th>Sprint</th><th style="text-align:right">Hours</th></tr></thead>
-        <tbody id="mysubs-tbody"><tr class="loading-row"><td colspan="5"><span class="spinner"></span>Loading...</td></tr></tbody>
+        <thead><tr><th>Date</th><th>Task</th><th>Description</th><th>Sprint</th><th style="text-align:right">Hours</th><th>Action</th></tr></thead>
+        <tbody id="mysubs-tbody"><tr class="loading-row"><td colspan="6"><span class="spinner"></span>Loading...</td></tr></tbody>
       </table>
       <div class="empty-state" id="mysubs-empty" style="display:none">No submissions found for this week.</div>
     </div>
@@ -1800,7 +1800,7 @@ async function submitLog() {
     var desc=row.querySelector('.task-desc');
     var t=inp[0].value.trim(), s=inp[1].value.trim(), h=parseFloat(inp[2].value)||0;
     var d=desc?desc.value.trim():'';
-    if(t) rows.push([date,dname,name,team,daytype,t,d,s||'—',h,'']);
+    if(t) rows.push([date,dname,name,team,daytype,t,d,s||'—',h,String(Date.now())+Math.random().toString(36).substr(2,4)]);
   });
   if (rows.length===0) { showToast('Please add at least one task',true); return; }
   var btn=document.getElementById('submit-btn');
@@ -2861,7 +2861,7 @@ async function renderMySubmissions() {
   var r = getWeekRange(mySubsWeekOffset);
   var label = r.start.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' – ' + r.end.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
   document.getElementById('mysubs-week-label').textContent = label;
-  document.getElementById('mysubs-tbody').innerHTML = '<tr class="loading-row"><td colspan="5"><span class="spinner"></span>Loading...</td></tr>';
+  document.getElementById('mysubs-tbody').innerHTML = '<tr class="loading-row"><td colspan="6"><span class="spinner"></span>Loading...</td></tr>';
   try {
     var all = await fetchFromSheet();
     var myRows = all.filter(function(r) {
@@ -2877,18 +2877,91 @@ async function renderMySubmissions() {
     var empty = document.getElementById('mysubs-empty');
     if (myRows.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
     empty.style.display = 'none';
+    var threeDaysAgo = new Date(); threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
     tbody.innerHTML = myRows.map(function(r) {
+      var rowDate = toDateObj(r[0]);
+      var canEdit = rowDate >= threeDaysAgo && r[9]; // within 3 days AND has an ID
+      var editBtn = canEdit ? '<button onclick="openEditLog(\''+r[9]+'\')" style="padding:4px 10px;border:1px solid var(--accent);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:11px;color:var(--accent)">✏️ Edit</button>' : '<span style="color:var(--text3);font-size:11px">—</span>';
       return '<tr>'+
         '<td class="muted">'+fmtDate(r[0])+'<br><span style="font-size:11px;color:var(--text3)">'+(r[1]||dayName(r[0]))+'</span></td>'+
         '<td style="font-weight:500">'+r[5]+'</td>'+
         '<td class="muted">'+r[6]+'</td>'+
         '<td class="muted">'+r[7]+'</td>'+
         '<td style="text-align:right;font-weight:600;color:var(--accent)">'+r[8]+'h</td>'+
+        '<td>'+editBtn+'</td>'+
       '</tr>';
     }).join('');
   } catch(e) {
-    document.getElementById('mysubs-tbody').innerHTML = '<tr class="loading-row"><td colspan="5" style="color:var(--red)">'+e.message+'</td></tr>';
+    document.getElementById('mysubs-tbody').innerHTML = '<tr class="loading-row"><td colspan="6" style="color:var(--red)">'+e.message+'</td></tr>';
   }
+}
+
+// Edit work log entry
+function openEditLog(rowId) {
+  // Find the row in cached data
+  var row = dashAllRows.find(function(r) { return r[9] === rowId; });
+  if (!row) { showToast('Entry not found. Try refreshing.', true); return; }
+  var modal = document.getElementById('attach-modal');
+  var box = document.getElementById('attach-modal-box');
+  box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+    '<div style="font-weight:700;font-size:16px">✏️ Edit Log Entry</div>' +
+    '<button onclick="closeAttachment()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 14px;cursor:pointer;font-size:13px">Close</button></div>' +
+    '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">Date: <strong>' + fmtDate(row[0]) + '</strong> · Employee: <strong>' + row[2] + '</strong></div>' +
+    '<div class="field"><label>Task / Work Item</label><input type="text" id="edit-task" value="' + (row[5] || '').replace(/"/g, '&quot;') + '"/></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+    '<div class="field"><label>Sprint</label><input type="text" id="edit-sprint" value="' + (row[7] || '').replace(/"/g, '&quot;') + '"/></div>' +
+    '<div class="field"><label>Hours</label><input type="number" id="edit-hours" value="' + (row[8] || 0) + '" min="0" step="0.5"/></div></div>' +
+    '<div class="field"><label>Description</label><textarea id="edit-desc" rows="3">' + (row[6] || '') + '</textarea></div>' +
+    '<div style="display:flex;gap:8px"><button class="submit-btn" style="width:auto;padding:9px 20px" onclick="saveEditLog(\'' + rowId + '\')">Save Changes</button>' +
+    '<button onclick="closeAttachment()" style="padding:9px 14px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--text2)">Cancel</button></div>';
+  modal.style.display = 'flex';
+}
+
+async function saveEditLog(rowId) {
+  var row = dashAllRows.find(function(r) { return r[9] === rowId; });
+  if (!row) { showToast('Entry not found', true); return; }
+
+  var newTask = document.getElementById('edit-task').value.trim();
+  var newSprint = document.getElementById('edit-sprint').value.trim() || '—';
+  var newHours = parseFloat(document.getElementById('edit-hours').value) || 0;
+  var newDesc = document.getElementById('edit-desc').value.trim();
+
+  if (!newTask) { showToast('Task name is required', true); return; }
+
+  // Track old values for audit
+  var oldTask = row[5], oldSprint = row[7], oldHours = row[8], oldDesc = row[6];
+
+  // Update local data
+  row[5] = newTask;
+  row[6] = newDesc;
+  row[7] = newSprint;
+  row[8] = newHours;
+
+  // Save to Google Sheet
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'updateWorkLog',
+        id: rowId,
+        row: [row[0], row[1], row[2], row[3], row[4], newTask, newDesc, newSprint, newHours, rowId]
+      })
+    });
+  } catch(e) {}
+
+  // Audit log
+  var changes = [];
+  if (oldTask !== newTask) changes.push('Task: "' + oldTask + '" → "' + newTask + '"');
+  if (oldSprint !== newSprint) changes.push('Sprint: "' + oldSprint + '" → "' + newSprint + '"');
+  if (oldHours !== newHours) changes.push('Hours: ' + oldHours + 'h → ' + newHours + 'h');
+  if (oldDesc !== newDesc) changes.push('Description updated');
+  logAudit('log', '<strong>' + currentUser.name + '</strong> edited log entry (' + fmtDate(row[0]) + '): ' + changes.join(', '));
+
+  _dataLastFetched = 0; // invalidate cache
+  closeAttachment();
+  showToast('✓ Entry updated');
+  renderMySubmissions();
 }
 
 // ============================================================
