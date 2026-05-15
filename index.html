@@ -1451,6 +1451,13 @@ function populateEmployeeDropdowns() {
     employeeList.map(function(e) {
       return '<option data-team="'+e.team+'">'+e.name+'</option>';
     }).join('');
+  // Auto-select current user
+  if (currentUser) {
+    for (var i = 0; i < nameSelect.options.length; i++) {
+      if (nameSelect.options[i].text === currentUser.name) { nameSelect.selectedIndex = i; autoFillTeam(); break; }
+    }
+    if (!currentUser.isAdmin) { nameSelect.disabled = true; nameSelect.style.opacity = '0.7'; }
+  }
   // Also update leave tracker dropdowns
   ['lv-name','lv-filter-name'].forEach(function(id) {
     var sel = document.getElementById(id);
@@ -1585,6 +1592,11 @@ function applyLogin() {
   var nameSelect = document.getElementById('f-name');
   for (var i = 0; i < nameSelect.options.length; i++) {
     if (nameSelect.options[i].text === currentUser.name) { nameSelect.selectedIndex = i; autoFillTeam(); break; }
+  }
+  // Lock name field for non-admin employees
+  if (!currentUser.isAdmin) {
+    nameSelect.disabled = true;
+    nameSelect.style.opacity = '0.7';
   }
   buildNavTabs();
   renderHomeDashboard();
@@ -1822,11 +1834,21 @@ async function renderMyWeekStatus() {
     var dotColor = isFuture ? 'var(--text3)' : submitted ? 'var(--green,#1A7A4A)' : 'var(--red,#C0392B)';
     var icon = isFuture ? '·' : submitted ? '✓' : '✗';
     var border = isToday ? '2px solid var(--accent)' : '1px solid var(--border)';
-    return '<div style="background:'+bgColor+';border:'+border+';border-radius:var(--radius);padding:8px;text-align:center">' +
+    var clickable = !isFuture && !submitted;
+    var cursor = clickable ? 'cursor:pointer' : '';
+    var onclick = clickable ? ' onclick="setSubmitDate(\''+d+'\')" title="Click to submit log for this date"' : '';
+    return '<div style="background:'+bgColor+';border:'+border+';border-radius:var(--radius);padding:8px;text-align:center;'+cursor+'"'+onclick+'>' +
       '<div style="font-size:10px;font-weight:600;color:var(--text2)">'+dayLabel+'</div>' +
       '<div style="font-size:18px;font-weight:700;color:'+dotColor+';margin:2px 0">'+icon+'</div>' +
       '<div style="font-size:9px;color:var(--text3)">'+dateLabel+'</div></div>';
   }).join('');
+}
+
+function setSubmitDate(dateStr) {
+  document.getElementById('f-date').value = dateStr;
+  showToast('📅 Date set to ' + new Date(dateStr).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'}));
+  // Scroll to tasks section
+  document.querySelector('#page-submit .task-list').scrollIntoView({behavior:'smooth'});
 }
 
 async function submitLog() {
