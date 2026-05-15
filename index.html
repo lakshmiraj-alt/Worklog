@@ -487,6 +487,14 @@ tbody td.muted{color:var(--text2)}
       </div>
     </div>
   </div>
+  <!-- My Weekly Submission Status -->
+  <div class="card" id="my-week-status" style="padding:12px 16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px"><span>📅</span> My Week — Submission Status</div>
+      <span id="my-week-count" style="font-size:11px;color:var(--text3)"></span>
+    </div>
+    <div id="my-week-days" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px"></div>
+  </div>
   <div class="card">
     <div class="card-title"><div class="card-title-icon">🗂</div> Tasks & hours</div>
     <div class="task-row-header">
@@ -1786,6 +1794,41 @@ function calcTotal() {
   document.querySelectorAll('#task-list .hrs').forEach(function(i){ total+=parseFloat(i.value)||0; });
   document.getElementById('total-display').textContent = total>0 ? total+'h' : '0h';
 }
+async function renderMyWeekStatus() {
+  if (!currentUser) return;
+  var data = [];
+  try { data = await fetchFromSheet(); } catch(e){}
+  var today = new Date();
+  // Get Monday of current week
+  var mon = new Date(today);
+  mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
+  var weekDays = [];
+  for (var i = 0; i < 5; i++) {
+    var d = new Date(mon);
+    d.setDate(d.getDate() + i);
+    weekDays.push(toISO(d));
+  }
+  var mySubmissions = new Set(data.filter(function(r){ return r[2] === currentUser.name; }).map(function(r){ return toISO(toDateObj(r[0])); }));
+  var submittedCount = weekDays.filter(function(d){ return mySubmissions.has(d); }).length;
+  document.getElementById('my-week-count').textContent = submittedCount + '/5 days submitted';
+  document.getElementById('my-week-days').innerHTML = weekDays.map(function(d) {
+    var dt = new Date(d);
+    var dayLabel = dt.toLocaleDateString('en-IN',{weekday:'short'});
+    var dateLabel = dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+    var isFuture = dt > today;
+    var isToday = d === toISO(today);
+    var submitted = mySubmissions.has(d);
+    var bgColor = isFuture ? 'var(--surface2)' : submitted ? 'var(--green-bg,#E6F4EC)' : 'var(--red-bg,#FDECEA)';
+    var dotColor = isFuture ? 'var(--text3)' : submitted ? 'var(--green,#1A7A4A)' : 'var(--red,#C0392B)';
+    var icon = isFuture ? '·' : submitted ? '✓' : '✗';
+    var border = isToday ? '2px solid var(--accent)' : '1px solid var(--border)';
+    return '<div style="background:'+bgColor+';border:'+border+';border-radius:var(--radius);padding:8px;text-align:center">' +
+      '<div style="font-size:10px;font-weight:600;color:var(--text2)">'+dayLabel+'</div>' +
+      '<div style="font-size:18px;font-weight:700;color:'+dotColor+';margin:2px 0">'+icon+'</div>' +
+      '<div style="font-size:9px;color:var(--text3)">'+dateLabel+'</div></div>';
+  }).join('');
+}
+
 async function submitLog() {
   var name = document.getElementById('f-name').value.trim();
   var team = document.getElementById('f-team').value.trim();
@@ -1809,6 +1852,7 @@ async function submitLog() {
     await postToSheet(rows);
     _dataLastFetched = 0; // invalidate cache so next fetch gets fresh data
     showToast('✓ Log submitted for '+name);
+    renderMyWeekStatus();
     document.getElementById('f-name').value='';
     document.getElementById('f-team').value='';
     document.getElementById('f-date').valueAsDate=new Date();
@@ -2181,6 +2225,7 @@ function doSwitchPage(page,btn) {
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebar-overlay').classList.remove('open');
   if (page==='home') renderHomeDashboard();
+  if (page==='submit') renderMyWeekStatus();
   if (page==='dashboard') renderDashboard();
   if (page==='report') renderReport();
   if (page==='leave') { renderLeaveTable(); renderLeaveMetrics(); }
