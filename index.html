@@ -1838,7 +1838,7 @@ async function renderMyWeekStatus() {
     d.setDate(d.getDate() + i);
     weekDays.push(toISO(d));
   }
-  var mySubmissions = new Set(data.filter(function(r){ return r[2] === currentUser.name; }).map(function(r){ return toISO(toDateObj(r[0])); }));
+  var mySubmissions = new Set(data.filter(function(r){ return (r[2]||'').trim() === currentUser.name.trim(); }).map(function(r){ return toISO(toDateObj(r[0])); }));
   var submittedCount = weekDays.filter(function(d){ return mySubmissions.has(d); }).length;
   document.getElementById('my-week-count').textContent = submittedCount + '/5 days submitted';
   document.getElementById('my-week-days').innerHTML = weekDays.map(function(d) {
@@ -1946,10 +1946,11 @@ async function renderDashboard() {
 
 function renderNotSubmitted() {
   var today = todayISO();
-  var submittedToday = new Set(dashAllRows.filter(function(r){ return toISO(toDateObj(r[0]))===today; }).map(function(r){ return r[2]; }));
+  var norm = function(s){ return (s||'').trim().replace(/\s+/g,' '); };
+  var submittedToday = new Set(dashAllRows.filter(function(r){ return toISO(toDateObj(r[0]))===today; }).map(function(r){ return norm(r[2]); }));
   var grid = document.getElementById('not-submitted-grid');
   grid.innerHTML = ALL_EMPLOYEES.map(function(emp){
-    var present = submittedToday.has(emp);
+    var present = submittedToday.has(norm(emp));
     return '<div class="emp-chip '+(present?'present':'missing')+'">'+
       '<div class="emp-chip-dot"></div>'+
       '<span style="font-size:12px">'+emp+'</span>'+
@@ -1965,11 +1966,11 @@ function renderNotSubmitted() {
   var yesterdayStr = toISO(yesterday);
   var yesterdayLabel = yesterday.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
 
-  var submittedYesterday = new Set(dashAllRows.filter(function(r){ return toISO(toDateObj(r[0]))===yesterdayStr; }).map(function(r){ return r[2]; }));
+  var submittedYesterday = new Set(dashAllRows.filter(function(r){ return toISO(toDateObj(r[0]))===yesterdayStr; }).map(function(r){ return norm(r[2]); }));
   var yGrid = document.getElementById('yesterday-grid');
   document.querySelector('#yesterday-card .card-title').innerHTML = '<div class="card-title-icon">📋</div> ' + yesterdayLabel + ' — submission status';
   yGrid.innerHTML = ALL_EMPLOYEES.map(function(emp){
-    var present = submittedYesterday.has(emp);
+    var present = submittedYesterday.has(norm(emp));
     return '<div class="emp-chip '+(present?'present':'missing')+'">'+
       '<div class="emp-chip-dot"></div>'+
       '<span style="font-size:12px">'+emp+'</span>'+
@@ -1982,12 +1983,13 @@ function checkCustomDate() {
   if (!dateInput) { showToast('Please select a date', true); return; }
   var dateStr = dateInput;
   var dateLabel = new Date(dateInput).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
-  var submitted = new Set(dashAllRows.filter(function(r){ return toISO(toDateObj(r[0])) === dateStr; }).map(function(r){ return r[2]; }));
+  var norm = function(s){ return (s||'').trim().replace(/\s+/g,' '); };
+  var submitted = new Set(dashAllRows.filter(function(r){ return toISO(toDateObj(r[0])) === dateStr; }).map(function(r){ return norm(r[2]); }));
   document.getElementById('custom-date-label').textContent = dateLabel + ' — submission status (' + submitted.size + '/' + ALL_EMPLOYEES.length + ')';
   var grid = document.getElementById('custom-date-grid');
   grid.style.display = '';
   grid.innerHTML = ALL_EMPLOYEES.map(function(emp){
-    var present = submitted.has(emp);
+    var present = submitted.has(norm(emp));
     return '<div class="emp-chip '+(present?'present':'missing')+'"><div class="emp-chip-dot"></div><span style="font-size:12px">'+emp+'</span></div>';
   }).join('');
 }
@@ -2309,21 +2311,21 @@ async function renderHomeDashboard() {
   var periodData = period === 'week' ? data.filter(function(r){ return inWeek(r[0], 0); }) : data.filter(function(r){ var d = toDateObj(r[0]); var now = new Date(); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
   var prevData = period === 'week' ? data.filter(function(r){ return inWeek(r[0], -1); }) : data.filter(function(r){ var d = toDateObj(r[0]); var now = new Date(); now.setMonth(now.getMonth()-1); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
 
-  var myName = currentUser ? currentUser.name : '';
-  var myData = periodData.filter(function(r){ return r[2] === myName; });
+  var myName = currentUser ? currentUser.name.trim() : '';
+  var myData = periodData.filter(function(r){ return (r[2]||'').trim() === myName; });
   var myHours = myData.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
-  var myPrevHours = prevData.filter(function(r){ return r[2] === myName; }).reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
+  var myPrevHours = prevData.filter(function(r){ return (r[2]||'').trim() === myName; }).reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
   var totalHours = periodData.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
   var prevTotalHours = prevData.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
   var activeEmps = new Set(periodData.map(function(r){ return r[2]; })).size;
-  var submittedToday = data.some(function(r){ return r[2] === myName && toISO(toDateObj(r[0])) === today; });
+  var submittedToday = data.some(function(r){ return (r[2]||'').trim() === myName && toISO(toDateObj(r[0])) === today; });
 
   // Streak
   var streak = 0; var checkDate = new Date();
   for (var i = 0; i < 30; i++) {
     checkDate.setDate(checkDate.getDate() - (i === 0 ? 0 : 1));
     if (checkDate.getDay() === 0 || checkDate.getDay() === 6) continue;
-    if (data.some(function(r){ return r[2] === myName && toISO(toDateObj(r[0])) === toISO(checkDate); })) streak++; else if (i > 0) break;
+    if (data.some(function(r){ return (r[2]||'').trim() === myName && toISO(toDateObj(r[0])) === toISO(checkDate); })) streak++; else if (i > 0) break;
   }
 
   // KPI Cards with comparison arrows
@@ -2955,7 +2957,7 @@ async function renderMySubmissions() {
   try {
     var all = await fetchFromSheet();
     var myRows = all.filter(function(r) {
-      return r[2] === currentUser.name && inWeek(r[0], mySubsWeekOffset);
+      return (r[2]||'').trim() === currentUser.name.trim() && inWeek(r[0], mySubsWeekOffset);
     });
     var totalHrs = myRows.reduce(function(s,r){ return s+(parseFloat(r[8])||0); },0);
     var uniqueDays = new Set(myRows.map(function(r){ return toISO(toDateObj(r[0])); })).size;
