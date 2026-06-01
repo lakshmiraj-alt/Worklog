@@ -1875,11 +1875,16 @@ async function submitLog() {
     _dataLastFetched = 0; // invalidate cache so next fetch gets fresh data
     showToast('✓ Log submitted for '+name);
     renderMyWeekStatus();
-    document.getElementById('f-name').value='';
-    document.getElementById('f-team').value='';
     document.getElementById('f-date').valueAsDate=new Date();
     document.getElementById('task-list').innerHTML='';
     addTask();
+    // Re-select current user's name
+    var nameSelect = document.getElementById('f-name');
+    if (currentUser) {
+      for (var i = 0; i < nameSelect.options.length; i++) {
+        if (nameSelect.options[i].text === currentUser.name) { nameSelect.selectedIndex = i; autoFillTeam(); break; }
+      }
+    }
   } catch(e) { showToast('Error: '+e.message,true); }
   finally { btn.disabled=false; btn.textContent='Submit daily log →'; }
 }
@@ -2970,19 +2975,20 @@ function openEditLog(rowKey) {
   var matchDate = decoded[0], matchName = decoded[1], matchTask = decoded[2], matchHours = decoded[3];
   var row = dashAllRows.find(function(r) { return String(r[0]) === matchDate && r[2] === matchName && r[5] === matchTask && String(r[8]) === matchHours; });
   if (!row) { showToast('Entry not found. Try refreshing.', true); return; }
-  // Store reference for save
   window._editingRow = row;
-  window._editingOriginal = { task: row[5], sprint: row[7], hours: row[8], desc: row[6] };
+  window._editingOriginal = { date: String(row[0]), task: row[5], sprint: row[7], hours: row[8], desc: row[6] };
+  var dateVal = toISO(toDateObj(row[0]));
   var modal = document.getElementById('attach-modal');
   var box = document.getElementById('attach-modal-box');
   box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
     '<div style="font-weight:700;font-size:16px">✏️ Edit Log Entry</div>' +
     '<button onclick="closeAttachment()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 14px;cursor:pointer;font-size:13px">Close</button></div>' +
-    '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">Date: <strong>' + fmtDate(row[0]) + '</strong> · Employee: <strong>' + row[2] + '</strong></div>' +
-    '<div class="field"><label>Task / Work Item</label><input type="text" id="edit-task" value="' + (row[5] || '').replace(/"/g, '&quot;') + '"/></div>' +
+    '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">Employee: <strong>' + row[2] + '</strong></div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
-    '<div class="field"><label>Sprint</label><input type="text" id="edit-sprint" value="' + (row[7] || '').replace(/"/g, '&quot;') + '"/></div>' +
+    '<div class="field"><label>Date</label><input type="date" id="edit-date" value="' + dateVal + '"/></div>' +
     '<div class="field"><label>Hours</label><input type="number" id="edit-hours" value="' + (row[8] || 0) + '" min="0" step="0.5"/></div></div>' +
+    '<div class="field"><label>Task / Work Item</label><input type="text" id="edit-task" value="' + (row[5] || '').replace(/"/g, '&quot;') + '"/></div>' +
+    '<div class="field"><label>Sprint</label><input type="text" id="edit-sprint" value="' + (row[7] || '').replace(/"/g, '&quot;') + '"/></div>' +
     '<div class="field"><label>Description</label><textarea id="edit-desc" rows="3">' + (row[6] || '') + '</textarea></div>' +
     '<div style="display:flex;gap:8px"><button class="submit-btn" style="width:auto;padding:9px 20px" onclick="saveEditLog()">Save Changes</button>' +
     '<button onclick="closeAttachment()" style="padding:9px 14px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--text2)">Cancel</button></div>';
@@ -2994,27 +3000,34 @@ async function saveEditLog() {
   var orig = window._editingOriginal;
   if (!row) { showToast('Entry not found', true); return; }
 
+  var newDate = document.getElementById('edit-date').value;
   var newTask = document.getElementById('edit-task').value.trim();
   var newSprint = document.getElementById('edit-sprint').value.trim() || '—';
   var newHours = parseFloat(document.getElementById('edit-hours').value) || 0;
   var newDesc = document.getElementById('edit-desc').value.trim();
 
   if (!newTask) { showToast('Task name is required', true); return; }
+  if (!newDate) { showToast('Date is required', true); return; }
 
-  // Save to Google Sheet — find by date + employee + old task + old hours
+  // Get day name for new date
+  var newDayName = new Date(newDate).toLocaleDateString('en-IN',{weekday:'long'});
+
+  // Save to Google Sheet
   try {
     await fetch(SCRIPT_URL, {
       method: 'POST', mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         action: 'updateWorkLog',
-        match: { date: String(row[0]), employee: row[2], task: orig.task, hours: String(orig.hours) },
-        newValues: { task: newTask, description: newDesc, sprint: newSprint, hours: newHours }
+        match: { date: orig.date, employee: row[2], task: orig.task, hours: String(orig.hours) },
+        newValues: { date: newDate, day: newDayName, task: newTask, description: newDesc, sprint: newSprint, hours: newHours }
       })
     });
   } catch(e) {}
 
   // Update local data
+  row[0] = newDate;
+  row[1] = newDayName;
   row[5] = newTask;
   row[6] = newDesc;
   row[7] = newSprint;
@@ -3022,12 +3035,13 @@ async function saveEditLog() {
 
   // Audit log
   var changes = [];
+  if (orig.date !== newDate) changes.push('Date: ' + fmtDate(orig.date) + ' → ' + fmtDate(newDate));
   if (orig.task !== newTask) changes.push('Task: "' + orig.task + '" → "' + newTask + '"');
   if (orig.sprint !== newSprint) changes.push('Sprint: "' + orig.sprint + '" → "' + newSprint + '"');
   if (String(orig.hours) !== String(newHours)) changes.push('Hours: ' + orig.hours + 'h → ' + newHours + 'h');
   if (orig.desc !== newDesc) changes.push('Description updated');
   if (changes.length > 0) {
-    logAudit('log', '<strong>' + currentUser.name + '</strong> edited log (' + fmtDate(row[0]) + '): ' + changes.join(', '));
+    logAudit('log', '<strong>' + currentUser.name + '</strong> edited log: ' + changes.join(', '));
   }
 
   _dataLastFetched = 0;
