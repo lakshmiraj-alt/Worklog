@@ -1738,7 +1738,16 @@ function fetchFromSheet() {
 // ============================================================
 function toDateObj(str) {
   if (!str) return null;
-  // Handle "Mon Mar 16 2026 ..." and "2026-03-16"
+  // Parse YYYY-MM-DD as local time (not UTC) to avoid timezone day shift
+  if (typeof str === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(str.trim())) {
+    var parts = str.trim().split('-');
+    return new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  }
+  // Handle ISO strings with time "2026-05-25T18:30:00.000Z"
+  if (typeof str === 'string' && str.indexOf('T') !== -1) {
+    var datePart = str.split('T')[0].split('-');
+    return new Date(parseInt(datePart[0]), parseInt(datePart[1])-1, parseInt(datePart[2]));
+  }
   var d = new Date(str);
   return isNaN(d.getTime()) ? null : d;
 }
