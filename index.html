@@ -525,6 +525,7 @@ tbody td.muted{color:var(--text2)}
   <!-- Who hasn't submitted today -->
   <div class="card" id="not-submitted-card">
     <div class="card-title"><div class="card-title-icon">📋</div> Today's submission status</div>
+    <div id="date-debug"></div>
     <div id="not-submitted-grid" class="emp-grid"><span class="spinner"></span></div>
   </div>
 
@@ -1738,18 +1739,32 @@ function fetchFromSheet() {
 // ============================================================
 function toDateObj(str) {
   if (!str) return null;
-  // Parse YYYY-MM-DD as local time (not UTC) to avoid timezone day shift
-  if (typeof str === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(str.trim())) {
-    var parts = str.trim().split('-');
-    return new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  var s = String(str).trim();
+  // YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    var p = s.split('-');
+    return new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
   }
-  // Handle ISO strings with time "2026-05-25T18:30:00.000Z"
-  if (typeof str === 'string' && str.indexOf('T') !== -1) {
-    var datePart = str.split('T')[0].split('-');
-    return new Date(parseInt(datePart[0]), parseInt(datePart[1])-1, parseInt(datePart[2]));
+  // ISO with time: 2026-05-25T18:30:00.000Z
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+    var p = s.split('T')[0].split('-');
+    return new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
   }
-  var d = new Date(str);
-  return isNaN(d.getTime()) ? null : d;
+  // DD/MM/YYYY or DD-MM-YYYY (Indian format)
+  if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(s)) {
+    var p = s.split(/[\/\-]/);
+    var day = parseInt(p[0]), month = parseInt(p[1]), year = parseInt(p[2]);
+    if (day > 12) return new Date(year, month-1, day); // DD/MM/YYYY
+    if (month > 12) return new Date(year, day-1, month); // MM/DD/YYYY
+    return new Date(year, month-1, day); // Assume DD/MM/YYYY for India
+  }
+  // Fallback: try native Date parser but extract local date
+  var d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    // If the string contains timezone info, extract just the date part
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  return null;
 }
 function toISO(d) {
   if (!d) return '';
@@ -1937,6 +1952,15 @@ async function renderDashboard() {
 
 function renderNotSubmitted() {
   var today = todayISO();
+  
+  // Debug: show raw date formats from sheet (remove after fixing)
+  if (dashAllRows.length > 0) {
+    var sample = dashAllRows.slice(-3).map(function(r){ return 'raw:"'+r[0]+'" → parsed:"'+toISO(toDateObj(r[0]))+'"'; });
+    console.log('DATE DEBUG | today:', today, '| samples:', sample.join(' | '));
+    var dbg = document.getElementById('date-debug');
+    if (dbg) dbg.innerHTML = '<span style="font-size:10px;color:var(--text3)">Debug: today='+today+' | last entry raw="'+dashAllRows[dashAllRows.length-1][0]+'" parsed="'+toISO(toDateObj(dashAllRows[dashAllRows.length-1][0]))+'"</span>';
+  }
+  
   var submittedToday = new Set(dashAllRows.filter(function(r){ return toISO(toDateObj(r[0]))===today; }).map(function(r){ return r[2]; }));
   var grid = document.getElementById('not-submitted-grid');
   grid.innerHTML = ALL_EMPLOYEES.map(function(emp){
