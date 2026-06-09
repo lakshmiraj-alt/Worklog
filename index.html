@@ -1883,11 +1883,17 @@ async function submitLog() {
   document.querySelectorAll('#task-list .task-row').forEach(function(row){
     var inp=row.querySelectorAll('.task-top input');
     var desc=row.querySelector('.task-desc');
-    var t=inp[0].value.trim(), s=inp[1].value.trim(), h=parseFloat(inp[2].value)||0;
+    var t=(inp[0]?inp[0].value:'').trim();
+    var s=(inp[1]?inp[1].value:'').trim();
+    var h=inp[2]?parseFloat(inp[2].value):0;
+    if (isNaN(h)) h=0;
     var d=desc?desc.value.trim():'';
     if(t) rows.push([date,dname,name,team,daytype,t,d,s||'—',h,String(Date.now())+Math.random().toString(36).substr(2,4)]);
   });
   if (rows.length===0) { showToast('Please add at least one task',true); return; }
+  // Validate hours
+  var totalH = rows.reduce(function(s,r){ return s+r[8]; },0);
+  if (totalH <= 0) { showToast('Please enter hours for at least one task',true); return; }
   var btn=document.getElementById('submit-btn');
   btn.disabled=true; btn.textContent='Submitting...';
   try {
@@ -2998,7 +3004,7 @@ function openEditLog(rowKey) {
   var row = dashAllRows.find(function(r) { return String(r[0]) === matchDate && (r[2]||'').trim() === matchName && (r[5]||'').trim() === matchTask && String(r[8]) === matchHours; });
   if (!row) { showToast('Entry not found. Try refreshing.', true); return; }
   window._editingRow = row;
-  window._editingOriginal = { date: String(row[0]), task: row[5], sprint: row[7], hours: row[8], desc: row[6] };
+  window._editingOriginal = { date: toISO(toDateObj(row[0])), task: (row[5]||'').trim(), sprint: (row[7]||'').trim(), hours: row[8], desc: (row[6]||'').trim() };
   var dateVal = toISO(toDateObj(row[0]));
   var modal = document.getElementById('attach-modal');
   var box = document.getElementById('attach-modal-box');
@@ -3034,14 +3040,15 @@ async function saveEditLog() {
   // Get day name for new date
   var newDayName = toDateObj(newDate).toLocaleDateString('en-IN',{weekday:'long'});
 
-  // Save to Google Sheet
+  // Save to Google Sheet — normalize dates to YYYY-MM-DD for matching
+  var matchDate = toISO(toDateObj(orig.date));
   try {
     await fetch(SCRIPT_URL, {
       method: 'POST', mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         action: 'updateWorkLog',
-        match: { date: orig.date, employee: row[2], task: orig.task, hours: String(orig.hours) },
+        match: { date: matchDate, employee: (row[2]||'').trim(), task: orig.task, hours: String(orig.hours) },
         newValues: { date: newDate, day: newDayName, task: newTask, description: newDesc, sprint: newSprint, hours: newHours }
       })
     });
