@@ -1954,8 +1954,11 @@ async function renderDashboard() {
 
 function renderNotSubmitted() {
   var today = todayISO();
+  var todayLabel = new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
   var norm = function(s){ return (s||'').trim().replace(/\s+/g,' '); };
   var submittedToday = new Set(dashAllRows.filter(function(r){ return toISO(toDateObj(r[0]))===today; }).map(function(r){ return norm(r[2]); }));
+  // Update today card title with date
+  document.querySelector('#not-submitted-card .card-title').innerHTML = '<div class="card-title-icon">📋</div> Today, ' + todayLabel + ' — submission status (' + submittedToday.size + '/' + ALL_EMPLOYEES.length + ')';
   var grid = document.getElementById('not-submitted-grid');
   grid.innerHTML = ALL_EMPLOYEES.map(function(emp){
     var present = submittedToday.has(norm(emp));
@@ -1976,7 +1979,7 @@ function renderNotSubmitted() {
 
   var submittedYesterday = new Set(dashAllRows.filter(function(r){ return toISO(toDateObj(r[0]))===yesterdayStr; }).map(function(r){ return norm(r[2]); }));
   var yGrid = document.getElementById('yesterday-grid');
-  document.querySelector('#yesterday-card .card-title').innerHTML = '<div class="card-title-icon">📋</div> ' + yesterdayLabel + ' — submission status';
+  document.querySelector('#yesterday-card .card-title').innerHTML = '<div class="card-title-icon">📋</div> ' + yesterdayLabel + ' — submission status (' + submittedYesterday.size + '/' + ALL_EMPLOYEES.length + ')';
   yGrid.innerHTML = ALL_EMPLOYEES.map(function(emp){
     var present = submittedYesterday.has(norm(emp));
     return '<div class="emp-chip '+(present?'present':'missing')+'">'+
