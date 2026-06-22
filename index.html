@@ -3007,7 +3007,7 @@ function openEditLog(rowKey) {
   var row = dashAllRows.find(function(r) { return String(r[0]) === matchDate && (r[2]||'').trim() === matchName && (r[5]||'').trim() === matchTask && String(r[8]) === matchHours; });
   if (!row) { showToast('Entry not found. Try refreshing.', true); return; }
   window._editingRow = row;
-  window._editingOriginal = { date: toISO(toDateObj(row[0])), task: (row[5]||'').trim(), sprint: (row[7]||'').trim(), hours: row[8], desc: (row[6]||'').trim() };
+  window._editingOriginal = { date: toISO(toDateObj(row[0])), task: (row[5]||'').trim(), sprint: (row[7]||'').trim(), hours: row[8], desc: (row[6]||'').trim(), id: (row[9]||'').trim() };
   var dateVal = toISO(toDateObj(row[0]));
   var modal = document.getElementById('attach-modal');
   var box = document.getElementById('attach-modal-box');
@@ -3043,7 +3043,7 @@ async function saveEditLog() {
   // Get day name for new date
   var newDayName = toDateObj(newDate).toLocaleDateString('en-IN',{weekday:'long'});
 
-  // Save to Google Sheet — normalize dates to YYYY-MM-DD for matching
+  // Save to Google Sheet
   var matchDate = toISO(toDateObj(orig.date));
   try {
     await fetch(SCRIPT_URL, {
@@ -3051,7 +3051,8 @@ async function saveEditLog() {
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         action: 'updateWorkLog',
-        match: { date: matchDate, employee: (row[2]||'').trim(), task: orig.task, hours: String(orig.hours) },
+        id: orig.id || '',
+        match: { date: matchDate, employee: (row[2]||'').trim(), task: orig.task },
         newValues: { date: newDate, day: newDayName, task: newTask, description: newDesc, sprint: newSprint, hours: newHours }
       })
     });
