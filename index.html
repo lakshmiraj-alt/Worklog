@@ -2980,10 +2980,10 @@ async function renderMySubmissions() {
     var empty = document.getElementById('mysubs-empty');
     if (myRows.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
     empty.style.display = 'none';
-    var threeDaysAgo = new Date(); threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    var editCutoff = new Date(); editCutoff.setDate(editCutoff.getDate() - 7); editCutoff.setHours(0,0,0,0);
     tbody.innerHTML = myRows.map(function(r) {
       var rowDate = toDateObj(r[0]);
-      var canEdit = rowDate >= threeDaysAgo;
+      var canEdit = rowDate >= editCutoff;
       var rowKey = btoa(encodeURIComponent(r[0] + '|' + r[2] + '|' + r[5] + '|' + r[8])).replace(/=/g,'');
       var editBtn = canEdit ? '<button onclick="openEditLog(\''+rowKey+'\')" style="padding:4px 10px;border:1px solid var(--accent);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:11px;color:var(--accent)">✏️ Edit</button>' : '<span style="color:var(--text3);font-size:11px">—</span>';
       return '<tr>'+
